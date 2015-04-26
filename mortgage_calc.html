@@ -1,0 +1,574 @@
+<html>
+<head>
+	<meta charset="utf8"> 
+	<style>
+		
+		body {
+			padding: 10px;
+			margin: 0px;
+			font-family: 'Sans Serif';
+			width: 100% !important;
+		}
+		
+	
+	
+	
+	
+		th {
+			color: #222222;
+			background-color: #7a9a15;
+		}
+	
+		td, th {
+			border: 1px solid #7a9a15;
+			padding-top: 5px;
+			padding-bottom: 5px;
+			padding-left: 10px;
+			padding-right: 5px;
+		}
+		table {
+			border-collapse: collapse;
+		}
+		
+		td > a {
+			color: #bada55;
+		}
+		td > a:visited {
+			color: #bada55;
+		}
+		
+		li {
+			padding-bottom: 2px;
+		}
+	
+	.amort_table tbody tr:nth-child(3n) {
+		background-color: #333333;
+	}
+	.amort_table tbody tr:nth-child(12n) td {
+		border-bottom-width: 4px !important;
+	}
+	
+	input[type=edit] {
+		background-color: #444444;
+		color: #dddddd;
+	}
+	
+	
+	.amort_table {
+		text-align: right;
+	}
+	
+	.kidleft > * {
+		float: left;
+	}
+	
+	.kidleft {
+		overflow: auto;
+		zoom: 1;
+	}
+	
+	.item {
+		margin-bottom: 10px;
+	}
+	
+	.container {
+		padding: 10px;
+		border: 1px solid #bada55;
+		width: 600px;
+	}
+	
+	.container-box {
+		width: 100%;
+		overflow: auto;
+		zoom: 1;
+	}
+	
+	
+	
+	.left {
+		float: left;
+		display: block;
+	}
+	
+	.go {
+		margin: 20px;
+	}
+	</style>
+
+	<link rel="stylesheet" type="text/css" href="./bada55.css" />
+	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.0/jquery.min.js"></script>
+	<script src="http://cdnjs.cloudflare.com/ajax/libs/floatthead/1.2.10/jquery.floatThead.min.js"></script>
+	<script src="http://cdnjs.cloudflare.com/ajax/libs/moment.js/2.1.0/moment.min.js"></script>
+	<script src="http://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.5.1/underscore-min.js"></script>
+	<script src="http://cdnjs.cloudflare.com/ajax/libs/handlebars.js/1.0.0/handlebars.min.js"></script>
+	<script>
+		
+		function min(a,b) { return a < b ? a : b };
+		function max(a,b) { return a >= b ? a : b };
+		
+		var nextID = 1;
+		var HB = {};
+		
+		Handlebars.registerHelper('df',  function(d, fmtStr) {
+			if(typeof d == 'undefined' || d == null) {
+				return 'Unknown';
+			}
+			var fs = typeof fmtStr == "string" ? fmtStr : "YYYY-MM-DD";
+			return moment(d).format(fs);
+		});
+		
+		Handlebars.registerHelper('$',  function(n) {
+			return parseFloat(n).toMoney()
+		});
+		
+		$(function() {
+		
+			$('script[type="x-application/handlebars"]').each(function() {
+				HB[$(this).attr('name')] = Handlebars.compile($(this).html());
+			});
+		});
+		
+		$(function() {
+			$('.editor [json]').val(''); // fuck you firefox
+			$('.editor [json="date"]').val(moment().format('YYYY-MM-DD'));
+		})
+
+		
+		Number.prototype.toMoney = function(decimals, decimal_sep, thousands_sep, sigil) { 
+			
+		};
+		</script>
+	
+	<script>
+		
+		//var mon_interest = ARP / 12; // only works for /APR/, not "annual interest rate"
+		
+		/*
+		A = periodic payment amount
+		P = net principle
+		i = periodic interest rate (mon_interest above)
+		n = total number of payments (first payment is 30 days after the loan originates)
+		p(t) = principle remaining at time t
+		
+		A = P(((i(1_i)^n) / ((1+i)^n - 1))
+		  = (Pi) / (1- (1+i)^-n)
+		  = P(i + ( i / ((1+i)^n - 1) ) 
+		
+		p(t) / P = 1 - ( ((1+it^t - 1)) / ((1+i)^n - 1) )
+		
+		
+		calculation of mortgage stuff:
+		
+		1) calculate the monthly payment amount using loan amount and interest
+		
+		2) for each pay period, 
+			calc interest i_p = (remaining balance * monthly interest)
+			calc payment principle = payment - i_p
+			calc new blance = first balance - payment principle
+		*/
+		
+		function makeRow() {
+			return $('<tr>' + Array.prototype.slice.apply(arguments).map(function(x) { return '<td>' + x.toMoney() + '</td>' }).join(' ') + '</tr>');
+		}
+		
+		function monthlyPayment(loan_amount, monthly_interest, num_payments) {
+			return (loan_amount * monthly_interest) / (1 - Math.pow(1 + monthly_interest, -num_payments) );
+		}
+		
+		function piRatios(balance, monthly_interest, payment_amount) {
+			var i_p = balance * monthly_interest;
+			return {
+				principle: payment_amount - i_p,
+				interest: i_p,
+				new_balance: balance - payment_amount + i_p,
+			};
+		}
+		
+		function calcTable(parentClass) {
+			
+			var pn = $('.' + parentClass + '-form');
+			
+			var loan_amount = parseInt(pn.find('[data-json="loan_amount"] input').val());
+			var sales_price = parseInt(pn.find('[data-json="sales_price"] input').val());
+			var term = parseInt(pn.find('[data-json="term"] input').val());
+			var apr = parseFloat(pn.find('[data-json="apr"] input').val()) * .01;
+			var closing_costs = parseFloat(pn.find('[data-json="closing_costs"] input').val());
+			var mi_rate = parseFloat(pn.find('[data-json="mi_rate"] input').val()) * .01;
+			var monthly_bills = parseFloat(pn.find('[data-json="bills_monthly"] input').val());
+			var monthly_other_fees = parseFloat(pn.find('[data-json="other_fees_monthly"] input').val());
+			var monthly_maint = parseFloat(pn.find('[data-json="maint_monthly"] input').val());
+			monthly_maint += parseFloat(pn.find('[data-json="maint_yearly"] input').val()) / 12;
+			var monthly_interest = apr  / 12;
+			var downpayment = sales_price - loan_amount;
+			
+			var app_rate = 0;
+			var app_or_resell = pn.find('[name="apporsales"]:checked').val();
+			if(app_or_resell == 'app') {
+				app_rate = parseFloat(pn.find('[data-json="app_rate"] input[type="edit"]').val()) * .01;
+			}
+			else {
+				var resell_price = parseFloat(pn.find('[data-json="resell_price"]').val());
+				var resell_months = parseFloat(pn.find('[data-json="resell_months"]').val());
+				var resell_closing_costs = parseFloat(pn.find('[data-json="resell_closing_costs"]').val());
+				var resell_profit = resell_price - sales_price - resell_closing_costs;
+				app_rate = .01 * (resell_profit / 12 / 12 / resell_months); // BUG: needs to be compound with respect to sales_price
+			}
+			
+			console.log(closing_costs);
+			var monthly_app_rate = app_rate / 12;
+			
+			
+			var num_payments = term * 12;
+			
+			var payment_amount = monthlyPayment(loan_amount, monthly_interest, num_payments)
+			
+			
+			var property_tax_rate = .012; 
+			var taxes = sales_price * property_tax_rate / 12;
+			
+			var insurance_rate = .0035;
+			var insurance = sales_price * insurance_rate / 12;
+			
+			var pmi = loan_amount * mi_rate / 12;
+			
+			var overhead = monthly_bills + monthly_maint + monthly_other_fees;
+			
+			var table = $('.' + parentClass + '.amort_table tbody');
+			table.html('');
+			var _bal = loan_amount;
+			var _total_principle = 0;
+			var _total_interest = 0;
+			var _total_insurance = 0;
+			var _house_value = sales_price;
+			var _equity = downpayment;
+			var _acc_cost = closing_costs;
+			
+			for(var period = 1; period <= (term * 12) >>> 0; period++) {
+				
+				var ltv = parseFloat((_bal / sales_price).toFixed(2));
+				
+				var _pmi = 0;
+				if(ltv > .80) {
+					_pmi = pmi;
+				}
+				
+				var app_amt = _house_value * monthly_app_rate;
+				_house_value += app_amt;
+				
+				var p_i = piRatios(_bal, monthly_interest, payment_amount);
+				
+				_total_principle += p_i.principle;
+				_total_interest += p_i.interest;
+				_total_insurance += insurance;
+				
+				_equity += p_i.principle + app_amt;
+				
+				var _monthly_cost = p_i.interest + insurance + _pmi + overhead
+				_acc_cost += _monthly_cost;
+				
+				var _tax_savings = 
+				
+				table.append(makeRow(
+					period,
+					_bal,
+					ltv,
+					_pmi,
+					insurance,
+					payment_amount,
+					p_i.interest,
+					p_i.principle,
+					p_i.new_balance,
+					_total_interest,
+					_total_principle,
+					_total_insurance,
+					app_amt,
+					_house_value,
+					_equity,
+					0,
+					overhead,
+					_monthly_cost,
+					_acc_cost,
+					_equity - _acc_cost - downpayment
+				));
+				
+				_bal = p_i.new_balance;
+			}
+			
+		};
+		
+		
+
+		
+		function calcAppartment(contClass) {
+			
+			var d = grabData($('.' + contClass + '-form'));
+			
+			var overhead = d.bills + d.ri_amount + d.commute; 
+			
+			var acc = {
+				totalRent: 0,
+				totalOverhead: 0,
+				totalLoss: d.non_ref_fees + d.ref_deposit,
+			};
+			
+			
+			var table = $('.' + contClass + '.amort_table tbody');
+			table.html('');
+			
+			
+			for(var period = 1; period <= (30 * 12) >>> 0; period++) {
+				
+				acc.totalRent += d.rent;
+				acc.totalOverhead += overhead; 
+				acc.totalLoss += d.bills + d.rent; 
+				
+				table.append(makeRow(
+					period,
+					d.rent,
+					overhead,
+					overhead + d.rent,
+					acc.totalLoss
+				));
+			}
+		};
+		
+		
+		function grabData(parent) {
+			var data = {};
+			
+			var formatters = {
+				string: function(x) { return x },
+				pct: function(x) { return parseFloat(x) * .01 },
+				amort: function(x) { return parseFloat(x) / 12 },
+				num: parseFloat,
+			};
+			
+			parent.find('[data-json]').each(function() {
+				var n = $(this);
+				
+				var name = n.attr('data-json');
+				var val = n.val();
+				
+				var fmt = n.attr('fmt') || 'num';
+				
+				
+				data[name] = formatters[fmt](val);
+			});
+			
+			return data;
+		};
+		
+		
+		
+		$(function() {
+			$('.go').click(function(e) {
+				e.preventDefault(); 
+				calcTable('mortgage'); 
+				calcAppartment('appartment');
+			});
+			
+			$('[name="apporsales"]').click(function(e) {
+				var app_or_resell = $('[name="apporsales"]:checked').val();
+				if(app_or_resell == 'app') {
+					$('[data-json="app_rate"] input[type="edit"]').removeAttr('disabled');
+					$('[data-json="resell_price"]').attr('disabled','disabled');
+					$('[data-json="resell_months"]').attr('disabled','disabled');
+					$('[data-json="resell_closing_costs"]').attr('disabled','disabled');
+				}
+				else {
+					$('[data-json="app_rate"] input[type="edit"]').attr('disabled','disabled');
+					$('[data-json="resell_price"]').removeAttr('disabled');
+					$('[data-json="resell_months"]').removeAttr('disabled');
+					$('[data-json="resell_closing_costs"]').removeAttr('disabled');
+				}
+				
+			});
+			
+			//$('.amort_table').floatThead({useAbsolutePositioning: false});
+		});
+	</script>
+	
+	
+</head>
+<body>
+	
+	<div class="container-box">
+		<div class="container mortgage-form left">
+			<h4>Mortgage</h4>
+			
+			APR:
+			<div class="item editable" data-json="apr">
+				<input type="edit" value="4.99" />
+			</div>
+			
+			Sales Price:
+			<div class="item editable" data-json="sales_price">
+				<input type="edit" value="250000" />
+			</div>
+		
+			Loan Amount:
+			<div class="item editable" data-json="loan_amount">
+				<input type="edit" value="220000" />
+			</div>
+		
+			Loan Term:
+			<div class="item editable" data-json="term">
+				<input type="edit" value="30" />
+			</div>
+
+			Closing Costs:
+			<div class="item editable" data-json="closing_costs">
+				<input type="edit" value="15000" />
+			</div>
+
+			Mortgage Insurance Rate:
+			<div class="item editable" data-json="mi_rate">
+				<input type="edit" value="0.52" />
+			</div>
+		
+			Appreciation Rate:
+			<div class="item editable kidleft" data-json="app_rate">
+				<input type="radio" name="apporsales" value="app" checked="checked" style="width:5%;"/>
+				<input type="edit" value="4" style="width:80%;" />
+			</div>
+			
+			Resell Price / Months After Purchase / Closing Costs
+			<div class="item editable kidleft" >
+				<input type="radio" name="apporsales" value="sales" style="width:5%;" />
+				<input type="edit" data-json="resell_price" value="280000" style="width:30%;" disabled="disabled" />
+				<input type="edit" data-json="resell_months" value="24" style="width:30%;" disabled="disabled" />
+				<input type="edit" data-json="resell_closing_costs" value="0" style="width:30%;" disabled="disabled" />
+			</div>
+			
+			Yearly Maintenance Cost (Not including monthy costs):
+			<div class="item editable" data-json="maint_yearly">
+				<input type="edit" value="1200" />
+			</div>
+
+			Monthly Maintenance Cost (Not including yearly costs):
+			<div class="item editable" data-json="maint_monthly">
+				<input type="edit" value="120" />
+			</div>
+			
+			Monthly Electric and Utilities (All house-related bills, not including maintenance above): 
+			<div class="item editable" data-json="bills_monthly">
+				<input type="edit" value="300" />
+			</div>
+			
+			Other Monthly Fees Not Included Above (HOA Fees, Clubhouse Membership, etc.):
+			<div class="item editable" data-json="other_fees_monthly">
+				<input type="edit" value="0" />
+			</div>
+
+			Monthly Commute Cost (Gas or Transit Passes):
+			<div class="item editable" data-json="commute_costs">
+				<input type="edit" value="200" />
+			</div>
+		
+			Annual Taxable Income:
+			<div class="item editable" data-json="annual_taxes">
+				<input type="edit" value="0" />
+			</div>
+
+			Effective Tax Rate:
+			<div class="item editable" data-json="tax_rate">
+				<input type="edit" value="0" />
+			</div>
+		
+		</div>
+		
+		<div class="container appartment-form left">
+			<h4>Appartment</h4>
+			
+			Monthly Rent, Including Parking, Storage and Pet Fees:
+			<div class="item editable" data-json="rent">
+				<input type="edit" value="1400" />
+			</div>
+			
+			Refundable Deposit:
+			<div class="item editable" data-json="ref_deposit">
+				<input type="edit" value="600" />
+			</div>
+		
+			Non-refundable Deposit / Fees:
+			<div class="item editable" data-json="non_ref_fees">
+				<input type="edit" value="300" />
+			</div>
+
+			Monthly Renter's Insurance Amount:
+			<div class="item editable" data-json="ri_amount">
+				<input type="edit" value="10" />
+			</div>
+			
+			Monthly Electric and Utilities (All appartment-related bills, not including maintenance above): 
+			<div class="item editable" data-json="bills">
+				<input type="edit" value="80" />
+			</div>
+			
+			Monthly Commute Cost (Gas or Transit Passes):
+			<div class="item editable" data-json="commute">
+				<input type="edit" value="20" />
+			</div>
+		
+		</div>
+	</div>
+	
+	<button class="go">Go</button>
+	
+	
+	<div class="left">
+		<table class="amort_table mortgage">
+			<thead>
+				<tr>
+					<th>EOM</th>
+					<th>Beginning Balance</th>
+					<th>LTV Ratio</th>
+					<th>PMI</th>
+					<th>Insurance</th>
+					<th>Payment</th>
+					<th>Interest</th>
+					<th>Principle</th>
+					<th>New Balance</th>
+					<th>Total Interest</th>
+					<th>Total Principle</th>
+					<th>Total Insurance</th>
+					<th>Appreciation</th>
+					<th>House Value</th>
+					<th>Equity</th>
+					<th>Tax Savings</th>
+					<th>Overhead</th>
+					<th>Monthly Costs</th>
+					<th>Accumulated Costs</th>
+					<th>Net Gain If Sold Now</th>
+				</th>
+			</thead>
+			<tbody>
+			
+			</tbody>
+		</table>
+	</div>
+	
+	<div class="left">
+		<table class="amort_table appartment">
+			<thead>
+				<tr>
+					<th>EOM</th>
+					<th>Rent</th>
+					<th>Bills</th>
+					<th>Monthly Costs</th>
+					<th>Total Loss</th>
+				</tr>
+			</thead>
+			<tbody>
+			
+			</tbody>
+		</table>
+	</div>
+
+				
+	
+	
+	
+</body>
+
+</html>

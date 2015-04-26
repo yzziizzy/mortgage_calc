@@ -1,0 +1,44 @@
+
+body {
+	width: 600px;
+	font-family: Sans Serif;
+	background-color: black;
+	color: gray;
+	padding-bottom: 400px;
+}
+footnote {
+	display: none;
+	position: relative;
+	font-size: .7em;
+	vertical-align: top;
+	margin: 0px 2px;
+	color: #bada55;
+	border-bottom: 1px solid;
+	cursor: pointer;
+}
+
+footnote > div {
+	position: absolute;
+	left: 10px;
+	top: -5px;
+	padding: 12px;
+	font-size: 1.1em;
+	color: black; 
+	border: 1px dashed #bada55;
+	background-color: gray;
+	text-decoration: none;
+	width: 230px;
+	z-index: 200;
+}
+
+li {
+	padding-bottom: 12px;
+}
+
+hr {
+	border-color: #bada55;
+	width: 30%;
+	height: 1px;
+	margin-top: 35px;
+	margin-bottom: 35px;
+}
