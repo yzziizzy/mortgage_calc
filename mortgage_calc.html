@@ -101,6 +101,7 @@
 	<script src="http://cdnjs.cloudflare.com/ajax/libs/moment.js/2.1.0/moment.min.js"></script>
 	<script src="http://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.5.1/underscore-min.js"></script>
 	<script src="http://cdnjs.cloudflare.com/ajax/libs/handlebars.js/1.0.0/handlebars.min.js"></script>
+	<script src="http://cdnjs.cloudflare.com/ajax/libs/Chart.js/1.0.2/Chart.min.js"></script>
 	<script>
 		
 		function min(a,b) { return a < b ? a : b };
@@ -184,38 +185,103 @@
 			};
 		}
 		
+		
+		function annualToMonthlyInterest(annual) {
+			return Math.pow(1 + annual, 1/12) - 1;
+		}
+		
+		
+		function periodSuccessor(o) {
+			
+			var n = _.extend({}, o);
+			
+			var ltv = parseFloat((o.loan_balance / o.purchase_price).toFixed(2));
+			
+			var pmi = 0;
+			if(ltv > .80) {
+				pmi = o.pmi;
+			}
+			
+			var app_amt = o.house_value * o.monthly_app_rate;
+			n.house_value += app_amt;
+			
+			var p_i = piRatios(o.loan_balance, o.monthly_interest, o.payment_amount);
+			
+// 			_total_principle += p_i.principle;
+// 			_total_interest += p_i.interest;
+// 			_total_insurance += insurance;
+			
+			n.equity += p_i.principle + app_amt;
+			
+			var _monthly_cost = p_i.interest + o.insurance + pmi + o.overhead
+			n.acc_cost += _monthly_cost;
+			
+			
+
+			n.period = o.period + 1;
+			n.ltv = ltv;
+			n.pmi = pmi,
+			n.interest = p_i.interest;
+			n.principle = p_i.principle;
+			n.loan_balance = p_i.new_balance;
+
+			n.appreciation = app_amt;
+			n.equity = n.acc_cost - o.downpayment
+			
+			n.loan_balance = p_i.new_balance;
+			
+			return n;
+		}
+		
+		/*
+		ROIC
+		Property Taxes
+		linkablility
+		graphs
+		inflation and future value of money
+		income tax deductions
+		price/sqft
+		warning about roof replacement
+		
+		*/
 		function calcTable(parentClass) {
 			
 			var pn = $('.' + parentClass + '-form');
 			
-			var loan_amount = parseInt(pn.find('[data-json="loan_amount"] input').val());
-			var sales_price = parseInt(pn.find('[data-json="sales_price"] input').val());
-			var term = parseInt(pn.find('[data-json="term"] input').val());
-			var apr = parseFloat(pn.find('[data-json="apr"] input').val()) * .01;
-			var closing_costs = parseFloat(pn.find('[data-json="closing_costs"] input').val());
-			var mi_rate = parseFloat(pn.find('[data-json="mi_rate"] input').val()) * .01;
-			var monthly_bills = parseFloat(pn.find('[data-json="bills_monthly"] input').val());
-			var monthly_other_fees = parseFloat(pn.find('[data-json="other_fees_monthly"] input').val());
-			var monthly_maint = parseFloat(pn.find('[data-json="maint_monthly"] input').val());
-			monthly_maint += parseFloat(pn.find('[data-json="maint_yearly"] input').val()) / 12;
-			var monthly_interest = apr  / 12;
-			var downpayment = sales_price - loan_amount;
+			var d = grabData($('.' + parentClass + '-form'));
 			
-			var app_rate = 0;
-			var app_or_resell = pn.find('[name="apporsales"]:checked').val();
-			if(app_or_resell == 'app') {
-				app_rate = parseFloat(pn.find('[data-json="app_rate"] input[type="edit"]').val()) * .01;
-			}
-			else {
-				var resell_price = parseFloat(pn.find('[data-json="resell_price"]').val());
-				var resell_months = parseFloat(pn.find('[data-json="resell_months"]').val());
-				var resell_closing_costs = parseFloat(pn.find('[data-json="resell_closing_costs"]').val());
-				var resell_profit = resell_price - sales_price - resell_closing_costs;
-				app_rate = .01 * (resell_profit / 12 / 12 / resell_months); // BUG: needs to be compound with respect to sales_price
-			}
+		
+			console.log(d);
 			
-			console.log(closing_costs);
+// 			var loan_amount = parseInt(pn.find('[data-json="loan_amount"] input').val());
+// 			var sales_price = parseInt(pn.find('[data-json="sales_price"] input').val());
+// 			var term = parseInt(pn.find('[data-json="term"] input').val());
+// 			var apr = parseFloat(pn.find('[data-json="apr"] input').val()) * .01;
+// 			var closing_costs = parseFloat(pn.find('[data-json="closing_costs"] input').val());
+// 			var mi_rate = parseFloat(pn.find('[data-json="mi_rate"] input').val()) * .01;
+// 			var monthly_bills = parseFloat(pn.find('[data-json="bills_monthly"] input').val());
+// 			var monthly_other_fees = parseFloat(pn.find('[data-json="other_fees_monthly"] input').val());
+// 			var monthly_maint = parseFloat(pn.find('[data-json="maint_monthly"] input').val());
+// 			monthly_maint += parseFloat(pn.find('[data-json="maint_yearly"] input').val()) / 12;
+// 			var monthly_interest = apr  / 12;
+// 			var downpayment = sales_price - loan_amount;
+// 			
+// 			var app_rate = 0;
+// 			var app_or_resell = pn.find('[name="apporsales"]:checked').val();
+// 			if(app_or_resell == 'app') {
+// 				app_rate = parseFloat(pn.find('[data-json="app_rate"] input[type="edit"]').val()) * .01;
+// 			}
+// 			else {
+// 				var resell_price = parseFloat(pn.find('[data-json="resell_price"]').val());
+// 				var resell_months = parseFloat(pn.find('[data-json="resell_months"]').val());
+// 				var resell_closing_costs = parseFloat(pn.find('[data-json="resell_closing_costs"]').val());
+// 				var resell_profit = resell_price - sales_price - resell_closing_costs;
+// 				app_rate = .01 * (resell_profit / 12 / 12 / resell_months); // BUG: needs to be compound with respect to sales_price
+// 			}
+// 			
+			//console.log(closing_costs);
 			var monthly_app_rate = app_rate / 12;
+			
 			
 			
 			var num_payments = term * 12;
@@ -247,6 +313,12 @@
 				
 				var ltv = parseFloat((_bal / sales_price).toFixed(2));
 				
+				beginning.LoanBalance[i] = _bal;
+				beginning.LTVRatio[i] = ltv;
+				beginning.HouseValue[i] = _house_value;
+				beginning.Equity[i] = _equity;
+				
+				
 				var _pmi = 0;
 				if(ltv > .80) {
 					_pmi = pmi;
@@ -266,7 +338,8 @@
 				var _monthly_cost = p_i.interest + insurance + _pmi + overhead
 				_acc_cost += _monthly_cost;
 				
-				var _tax_savings = 
+				//var _tax_savings = 
+				
 				
 				table.append(makeRow(
 					period,
@@ -292,6 +365,8 @@
 				));
 				
 				_bal = p_i.new_balance;
+				
+				
 			}
 			
 		};
@@ -350,13 +425,87 @@
 				var val = n.val();
 				
 				var fmt = n.attr('fmt') || 'num';
-				
+				console.log(name, val);
 				
 				data[name] = formatters[fmt](val);
 			});
 			
 			return data;
 		};
+		
+		
+		
+		
+		function mkChart(sel, span, data) {
+			
+			var opts = {
+				scaleShowGridLines : false,
+				scaleGridLineColor : "rgba(0,0,0,.05)",
+				pointDot : false,
+				datasetStrokeWidth : 1,
+				datasetFill : false,
+				
+				
+			};
+			
+			var linecolors = [
+				'yellow',
+				'red',
+				'pink',
+				'silver',
+			];
+				
+			
+			var labels = [];
+			for(var i = 0; i < span; i++) {
+				if(i % 12 == 0) 
+					labels.push(i + 'Y');
+				else 
+					labels.push('');
+			}
+			
+			
+			var chartData = {
+				labels: labels,
+				datasets: []
+				
+			};
+			
+			
+			
+			
+			var data = {
+				labels: ["January", "February", "March", "April", "May", "June", "July"],
+				datasets: [
+					{
+						label: "My First dataset",
+						fillColor: "rgba(220,220,220,0.2)",
+						strokeColor: "rgba(220,220,220,1)",
+						pointColor: "rgba(220,220,220,1)",
+						pointStrokeColor: "#fff",
+						pointHighlightFill: "#fff",
+						pointHighlightStroke: "rgba(220,220,220,1)",
+						data: [65, 59, 80, 81, 56, 55, 40]
+					},
+					{
+						label: "My Second dataset",
+						fillColor: "rgba(151,187,205,0.2)",
+						strokeColor: "rgba(151,187,205,1)",
+						pointColor: "rgba(151,187,205,1)",
+						pointStrokeColor: "#fff",
+						pointHighlightFill: "#fff",
+						pointHighlightStroke: "rgba(151,187,205,1)",
+						data: [28, 48, 40, 19, 86, 27, 90]
+					}
+				]
+			};
+
+			var ctx = $(sel)[0].getContext("2d");
+			var chart = new Chart(ctx).Line(data, opts);
+			
+			
+			
+		}
 		
 		
 		
@@ -515,6 +664,8 @@
 	
 	<button class="go">Go</button>
 	
+	<canvas class="pie-chart" width="600" height="300"></canvas>
+
 	
 	<div class="left">
 		<table class="amort_table mortgage">
