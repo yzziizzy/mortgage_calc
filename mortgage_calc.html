@@ -234,6 +234,7 @@
 		}
 		
 		/*
+		inflation
 		ROIC
 		Property Taxes
 		linkablility
@@ -280,20 +281,50 @@
 // 			}
 // 			
 			//console.log(closing_costs);
-			var monthly_app_rate = app_rate / 12;
 			
 			
-			
-			var num_payments = term * 12;
-			
-			var payment_amount = monthlyPayment(loan_amount, monthly_interest, num_payments)
-			
-			
-			var property_tax_rate = .012; 
-			var taxes = sales_price * property_tax_rate / 12;
+			var monthly_interest = d.apr  / 12; // this works with APR's
+			var num_payments = d.term * 12;
+			d.property_tax_rate = .012; 
 			
 			var insurance_rate = .0035;
-			var insurance = sales_price * insurance_rate / 12;
+			var insurance = d.purchase_price * insurance_rate / 12;
+			
+			var seed = _.extend({}, d, {
+				payment_amount: monthlyPayment(d.loan_amount, d.monthly_interest, num_payments),
+				monthly_interest: monthly_interest,
+			});
+			
+			
+			
+			function project(data, end, sucFn) {
+				
+				var results = [];
+				
+				var last = data;
+				results.push(data);
+				
+				for(var i = 0; i < end; i++) {
+					data.period = i;
+					
+					last = sucFn(last);
+					results.push(last);
+				}
+				
+				return results;
+			}
+			
+			var xx = project(seed, num_payments, periodSuccessor);
+			
+			console.log(xx);
+			return;
+			
+			
+			
+			
+			
+			var taxes = sales_price * property_tax_rate / 12;
+			
 			
 			var pmi = loan_amount * mi_rate / 12;
 			
@@ -546,39 +577,39 @@
 			<h4>Mortgage</h4>
 			
 			APR:
-			<div class="item editable" data-json="apr">
-				<input type="edit" value="4.99" />
+			<div class="item editable">
+				<input data-json="apr" type="edit" value="4.99" />
 			</div>
 			
-			Sales Price:
-			<div class="item editable" data-json="sales_price">
-				<input type="edit" value="250000" />
+			Purchase Price:
+			<div class="item editable">
+				<input data-json="purchase_price" type="edit" value="250000" />
 			</div>
 		
 			Loan Amount:
-			<div class="item editable" data-json="loan_amount">
-				<input type="edit" value="220000" />
+			<div class="item editable">
+				<input data-json="loan_amount" type="edit" value="220000" />
 			</div>
 		
 			Loan Term:
-			<div class="item editable" data-json="term">
-				<input type="edit" value="30" />
+			<div class="item editable">
+				<input data-json="term" type="edit" value="30" />
 			</div>
 
 			Closing Costs:
-			<div class="item editable" data-json="closing_costs">
-				<input type="edit" value="15000" />
+			<div class="item editable">
+				<input data-json="closing_costs" type="edit" value="15000" />
 			</div>
 
 			Mortgage Insurance Rate:
-			<div class="item editable" data-json="mi_rate">
-				<input type="edit" value="0.52" />
+			<div class="item editable">
+				<input data-json="mi_rate" type="edit" value="0.52" />
 			</div>
 		
 			Appreciation Rate:
-			<div class="item editable kidleft" data-json="app_rate">
+			<div class="item editable kidleft">
 				<input type="radio" name="apporsales" value="app" checked="checked" style="width:5%;"/>
-				<input type="edit" value="4" style="width:80%;" />
+				<input data-json="app_rate" type="edit" value="4" style="width:80%;" />
 			</div>
 			
 			Resell Price / Months After Purchase / Closing Costs
@@ -590,38 +621,38 @@
 			</div>
 			
 			Yearly Maintenance Cost (Not including monthy costs):
-			<div class="item editable" data-json="maint_yearly">
-				<input type="edit" value="1200" />
+			<div class="item editable">
+				<input data-json="maint_yearly" type="edit" value="1200" />
 			</div>
 
 			Monthly Maintenance Cost (Not including yearly costs):
-			<div class="item editable" data-json="maint_monthly">
-				<input type="edit" value="120" />
+			<div class="item editable">
+				<input data-json="maint_monthly" type="edit" value="120" />
 			</div>
 			
 			Monthly Electric and Utilities (All house-related bills, not including maintenance above): 
-			<div class="item editable" data-json="bills_monthly">
-				<input type="edit" value="300" />
+			<div class="item editable">
+				<input data-json="bills_monthly" type="edit" value="300" />
 			</div>
 			
 			Other Monthly Fees Not Included Above (HOA Fees, Clubhouse Membership, etc.):
-			<div class="item editable" data-json="other_fees_monthly">
-				<input type="edit" value="0" />
+			<div class="item editable">
+				<input data-json="other_fees_monthly" type="edit" value="0" />
 			</div>
 
 			Monthly Commute Cost (Gas or Transit Passes):
-			<div class="item editable" data-json="commute_costs">
-				<input type="edit" value="200" />
+			<div class="item editable">
+				<input data-json="commute_costs" type="edit" value="200" />
 			</div>
 		
 			Annual Taxable Income:
-			<div class="item editable" data-json="annual_taxes">
-				<input type="edit" value="0" />
+			<div class="item editable">
+				<input data-json="annual_taxes" type="edit" value="0" />
 			</div>
 
 			Effective Tax Rate:
-			<div class="item editable" data-json="tax_rate">
-				<input type="edit" value="0" />
+			<div class="item editable">
+				<input data-json="tax_rate" type="edit" value="0" />
 			</div>
 		
 		</div>
