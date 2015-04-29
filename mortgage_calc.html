@@ -191,6 +191,8 @@
 		}
 		
 		
+		
+		// crap
 		function periodSuccessor(o) {
 			
 			var n = _.extend({}, o);
@@ -202,7 +204,7 @@
 				pmi = o.pmi;
 			}
 			
-			var app_amt = o.house_value * o.monthly_app_rate;
+			var app_amt = o.house_value * o.app_rate / 12;
 			n.house_value += app_amt;
 			
 			var p_i = piRatios(o.loan_balance, o.monthly_interest, o.payment_amount);
@@ -232,6 +234,36 @@
 			
 			return n;
 		}
+		
+		
+		// probably has floating point precision problems
+		function amortTable(loanAmount, apr, months) {
+			var o = {
+				principle: [],
+				interest: [],
+				payment: [],
+				period: [],
+				endingBalance: [],
+			};
+			
+			var payment = monthlyPayment(loanAmount, apr / 12, months);
+			
+			for(var i = 0; i < months; i++) {
+				
+				var p_i = piRatios(loanAmount, apr / 12, payment);
+				
+				loanAmount -= payment;
+				
+				o[i].payment = payment;
+				o[i].principle = p_i.principle;
+				o[i].interest = p_i.interest;
+				o[i].payment = loanAmount;
+				o[i].period = i;
+			}
+			
+			return o;
+		}
+		
 		
 		/*
 		inflation
@@ -283,40 +315,35 @@
 			//console.log(closing_costs);
 			
 			
-			var monthly_interest = d.apr  / 12; // this works with APR's
+			d.apr = d.apr / 100;
+			
+			d.monthly_interest = d.apr  / 12; // this works with APR's
 			var num_payments = d.term * 12;
 			d.property_tax_rate = .012; 
 			
 			var insurance_rate = .0035;
 			var insurance = d.purchase_price * insurance_rate / 12;
 			
-			var seed = _.extend({}, d, {
-				payment_amount: monthlyPayment(d.loan_amount, d.monthly_interest, num_payments),
-				monthly_interest: monthly_interest,
-			});
+			
+			var data = amortTable(d.loan_amount, d.apr, d.term * 30);
+			
+			data.insurance = data.period.map(constantValue(insurance));
+			
+			
+			var overhead = d.bills_monthly + d.maint_monthly + (d.maint_yearly / 12) + d.other_fees_monthly;
+			
+			data.overhead = data.period.map(constantValue(overhead));
 			
 			
 			
-			function project(data, end, sucFn) {
-				
-				var results = [];
-				
-				var last = data;
-				results.push(data);
-				
-				for(var i = 0; i < end; i++) {
-					data.period = i;
-					
-					last = sucFn(last);
-					results.push(last);
-				}
-				
-				return results;
+			function constantValue(val) {
+				return function() { return val; }
 			}
 			
-			var xx = project(seed, num_payments, periodSuccessor);
 			
-			console.log(xx);
+			
+			
+			
 			return;
 			
 			
@@ -588,7 +615,7 @@
 		
 			Loan Amount:
 			<div class="item editable">
-				<input data-json="loan_amount" type="edit" value="220000" />
+				<input data-json="loan_balance" type="edit" value="220000" />
 			</div>
 		
 			Loan Term:
