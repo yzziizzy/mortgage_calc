@@ -319,6 +319,7 @@
 // 			
 			//console.log(closing_costs);
 			
+			d.monthly_app_rate = annualToMonthlyInterest(d.app_rate);
 			
 			d.apr = d.apr / 100;
 			
@@ -326,19 +327,62 @@
 			var num_payments = d.term * 12;
 			d.property_tax_rate = .012; 
 			
-			var insurance_rate = .0035;
-			var insurance = d.purchase_price * insurance_rate / 12;
-			
+			var pmi = loan_amount * d.mi_rate / 12;
 			
 			var data = amortTable(d.loan_amount, d.apr, d.term * 30);
 			
+			// appreciation and house value
+			
+			var data.house_value = data.period.map(function(i) {
+				return d.purchase_price * cmpInt(d.monthly_app_rate, i);
+			});
+			
+			
+			
+			function cmpInt(periodic_rate, period) {
+				// A = P(1 + r/n) ^ tn
+				return Math.pow(1 + periodic_rate, period);
+			}
+			
+			var insurance_rate = .0035;
+			var insurance = d.purchase_price * insurance_rate / 12;
 			data.insurance = data.period.map(constantValue(insurance));
 			
 			
-			var data.overhead = d.bills_monthly + d.maint_monthly + (d.maint_yearly / 12) + d.other_fees_monthly;
-			
+			var overhead = d.bills_monthly + d.maint_monthly + (d.maint_yearly / 12) + d.other_fees_monthly;
 			data.overhead = data.period.map(constantValue(overhead));
 			
+			data.property_tax = data.house_value.map(function(hv) {
+				// BUG: APR or compound interest? should go off assessment
+				return (d.property_tax_rate / 12) * hv;
+			});
+			
+			
+			data.ltv = [];
+			for(var i = 0; i < d.term * 12; i++) {
+				// prolly a bug here: loan balance is the ending balance
+				var ltv = parseFloat((data.loan_balance[i] / d.purchase_price).toFixed(2)); 
+				data.ltv[i] = ltv;
+				
+				// mortgage insurance
+				data.pmi[i] = ltv > 0.80 ? pmi_amount : 0;
+				data.payment[i] += data.pmi[i];
+				
+				
+			}
+			
+			
+			function inchworm(arr, first, fn) {
+				var o = [];
+				var last = first;
+				
+				for(var i = 0; i < arr.length; i++) {
+					o[i] = fn(last, arr[i]);
+					last = arr[i];
+				}
+				
+				return o;
+			}
 			
 			
 			function constantValue(val) {
