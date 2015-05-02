@@ -136,7 +136,8 @@
 
 		
 		Number.prototype.toMoney = function() { 
-			var str = this.toString();
+// 		return this;
+			var str = (this.toFixed(2)+'').toString();
 			var x = 3 - str.length;
 			if(x > 0) {
 				str = (x > 1 ? '00' : '0') + str ;
@@ -174,7 +175,7 @@
 		*/
 		
 		function makeRow() {
-			return $('<tr>' + Array.prototype.slice.apply(arguments).map(function(x) { return '<td>' + x.toMoney() + '</td>' }).join(' ') + '</tr>');
+			return $('<tr>' + Array.prototype.slice.apply(arguments).map(function(x) { return '<td>' + (x.toMoney && x.toMoney() || x) + '</td>' }).join(' ') + '</tr>');
 		}
 		
 		function monthlyPayment(loan_amount, monthly_interest, num_payments) {
@@ -248,27 +249,35 @@
 				interest: [],
 				payment: [],
 				period: [],
-				endingBalance: [],
+				loan_balance: [],
+				ending_balance: [],
 			};
 			
 			var payment = monthlyPayment(loanAmount, apr / 12, months);
 			
-			for(var i = 0; i < months; i++) {
+			for(var i = 0; i <= months; i++) {
 				
 				var p_i = piRatios(loanAmount, apr / 12, payment);
 				
-				loanAmount -= payment;
+				o.loan_balance[i] = loanAmount;
+				loanAmount = p_i.new_balance;
 				
-				o[i].payment = payment;
-				o[i].principle = p_i.principle;
-				o[i].interest = p_i.interest;
-				o[i].payment = loanAmount;
-				o[i].period = i;
+				o.payment[i] = payment;
+				o.principle[i] = p_i.principle;
+				o.interest[i] = p_i.interest;
+				o.ending_balance[i] = p_i.new_balance;
+				o.period[i] = i;
 			}
 			
 			return o;
 		}
 		
+		function prettyPeriod(n) {
+			var y = Math.floor(n / 12);
+			var mons = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun','Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+			var m = mons[n % 12];
+			return m + ', ' + y;
+		}
 		
 		/*
 		inflation
@@ -280,6 +289,7 @@
 		income tax deductions
 		price/sqft
 		warning about roof replacement
+		total liability
 		
 		*/
 		function calcTable(parentClass) {
@@ -319,6 +329,8 @@
 // 			
 			//console.log(closing_costs);
 			
+			d.app_rate /= 100;
+			
 			d.monthly_app_rate = annualToMonthlyInterest(d.app_rate);
 			
 			d.apr = d.apr / 100;
@@ -327,14 +339,22 @@
 			var num_payments = d.term * 12;
 			d.property_tax_rate = .012; 
 			
-			var pmi = loan_amount * d.mi_rate / 12;
+			var pmi_amount = d.loan_balance * d.mi_rate / 12 / 100;
 			
-			var data = amortTable(d.loan_amount, d.apr, d.term * 30);
-			
+			var data = amortTable(d.loan_balance, d.apr, num_payments);
+			console.log(data);
 			// appreciation and house value
 			
-			var data.house_value = data.period.map(function(i) {
+			data.house_value = data.period.map(function(i) {
 				return d.purchase_price * cmpInt(d.monthly_app_rate, i);
+			});
+			
+			data.acc_appreciation = data.period.map(function(i) {
+				return d.purchase_price * (cmpInt(d.monthly_app_rate, i) - 1);
+			});
+			
+			data.appreciation = data.period.map(function(i) {
+				return d.purchase_price * (cmpInt(d.monthly_app_rate, i) - cmpInt(d.monthly_app_rate, i-1));
 			});
 			
 			
@@ -359,7 +379,8 @@
 			
 			
 			data.ltv = [];
-			for(var i = 0; i < d.term * 12; i++) {
+			data.pmi = [];
+			for(var i = 0; i < num_payments; i++) {
 				// prolly a bug here: loan balance is the ending balance
 				var ltv = parseFloat((data.loan_balance[i] / d.purchase_price).toFixed(2)); 
 				data.ltv[i] = ltv;
@@ -390,12 +411,24 @@
 			}
 			
 			
-			for(var i = 0; i < d.term * 30; i++) {
+			
+			var table = $('.' + parentClass + '.amort_table tbody');
+			table.html('');
+			
+			for(var i = 0; i < d.term * 12; i++) {
 				table.append(makeRow(
-					data.period[i],
+					prettyPeriod(data.period[i]),
 					data.loan_balance[i],
 					// ltv
-					data.insurance,
+					data.pmi[i],
+					data.insurance[i],
+					data.payment[i],
+					data.interest[i],
+					data.principle[i],
+					data.house_value[i],
+					data.appreciation[i],
+					data.acc_appreciation[i],
+					data.overhead[i]
 					
 					
 				));
@@ -414,8 +447,7 @@
 			
 			var overhead = monthly_bills + monthly_maint + monthly_other_fees;
 			
-			var table = $('.' + parentClass + '.amort_table tbody');
-			table.html('');
+			
 			var _bal = loan_amount;
 			var _total_principle = 0;
 			var _total_interest = 0;
@@ -787,17 +819,18 @@
 			<thead>
 				<tr>
 					<th>EOM</th>
-					<th>Beginning Balance</th>
-					<th>LTV Ratio</th>
+					<th>Starting Balance</th>
+					
 					<th>PMI</th>
 					<th>Insurance</th>
 					<th>Payment</th>
 					<th>Interest</th>
 					<th>Principle</th>
-					<th>New Balance</th>
-					<th>Total Interest</th>
-					<th>Total Principle</th>
-					<th>Total Insurance</th>
+					<th>House Value</th>
+					<th>Appreciation</th>
+					<th>Total Appr.</th>
+					<th>Overhead</th>
+					<!--th>Total Insurance</th>
 					<th>Appreciation</th>
 					<th>House Value</th>
 					<th>Equity</th>
@@ -805,7 +838,7 @@
 					<th>Overhead</th>
 					<th>Monthly Costs</th>
 					<th>Accumulated Costs</th>
-					<th>Net Gain If Sold Now</th>
+					<th>Net Gain If Sold Now</th-->
 				</th>
 			</thead>
 			<tbody>
