@@ -101,7 +101,7 @@
 	<script src="http://cdnjs.cloudflare.com/ajax/libs/moment.js/2.1.0/moment.min.js"></script>
 	<script src="http://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.5.1/underscore-min.js"></script>
 	<script src="http://cdnjs.cloudflare.com/ajax/libs/handlebars.js/1.0.0/handlebars.min.js"></script>
-	<script src="http://cdnjs.cloudflare.com/ajax/libs/Chart.js/1.0.2/Chart.min.js"></script>
+	<!--script src="http://cdnjs.cloudflare.com/ajax/libs/Chart.js/1.0.2/Chart.min.js"></script-->
 	<script>
 		
 		function min(a,b) { return a < b ? a : b };
@@ -434,6 +434,9 @@
 				));
 			}
 			
+			
+			//mkChart('.pie-chart', num_payments, data.principle);
+			
 			return;
 			
 			
@@ -460,10 +463,6 @@
 				
 				var ltv = parseFloat((_bal / sales_price).toFixed(2));
 				
-				beginning.LoanBalance[i] = _bal;
-				beginning.LTVRatio[i] = ltv;
-				beginning.HouseValue[i] = _house_value;
-				beginning.Equity[i] = _equity;
 				
 				
 				var _pmi = 0;
@@ -614,12 +613,23 @@
 			
 			var chartData = {
 				labels: labels,
-				datasets: []
+				datasets: [
+					{
+						label: "My First dataset",
+						fillColor: "rgba(220,220,220,0.2)",
+						strokeColor: "rgba(220,220,220,1)",
+						pointColor: "rgba(220,220,220,1)",
+						pointStrokeColor: "#fff",
+						pointHighlightFill: "#fff",
+						pointHighlightStroke: "rgba(220,220,220,1)",
+						data: data
+					},
+				]
 				
 			};
 			
 			
-			
+			/*
 			
 			var data = {
 				labels: ["January", "February", "March", "April", "May", "June", "July"],
@@ -645,10 +655,10 @@
 						data: [28, 48, 40, 19, 86, 27, 90]
 					}
 				]
-			};
+			};*/
 
 			var ctx = $(sel)[0].getContext("2d");
-			var chart = new Chart(ctx).Line(data, opts);
+			var chart = new Chart(ctx).Line(chartData, opts);
 			
 			
 			
