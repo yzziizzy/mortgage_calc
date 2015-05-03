@@ -136,7 +136,7 @@
 	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.0/jquery.min.js"></script>
 	<script src="http://cdnjs.cloudflare.com/ajax/libs/floatthead/1.2.10/jquery.floatThead.min.js"></script>
 	<script src="http://cdnjs.cloudflare.com/ajax/libs/moment.js/2.1.0/moment.min.js"></script>
-	<script src="http://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.5.1/underscore-min.js"></script>
+	<script src="http://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>
 	<script src="http://cdnjs.cloudflare.com/ajax/libs/handlebars.js/1.0.0/handlebars.min.js"></script>
 	<script src="http://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
 	<script src="http://cdnjs.cloudflare.com/ajax/libs/metrics-graphics/2.4.0/metricsgraphics.js"></script>
@@ -317,12 +317,28 @@
 			return m + ', ' + y;
 		}
 		
+		function whyIsntThisBuiltIn(qstr) {
+			return _.object(qstr.split('&').map(function(c) {
+				return c.split('=').map(decodeURIComponent);
+			}));
+		}
+		
+		
+		// initialize any values given in the url
+		$(function(){
+			var d = _.mapObject(whyIsntThisBuiltIn(window.location.hash.replace(/^#/, '')), parseFloat);
+			
+			for(var k in d) {
+				$('[data-json="'+k+'"]').val(d[k]);
+			}
+		});
+		
+		
 		/*
 		inflation
 		ROIC
 		Property Taxes
 		linkablility
-		graphs
 		inflation and future value of money
 		income tax deductions
 		price/sqft
@@ -338,8 +354,10 @@
 			
 			var d = grabData($('.' + parentClass + '-form'));
 			
-		
-			console.log(d);
+			window.location.hash = $.param(d);
+			
+			
+// 			console.log(d);
 			
 // 			var loan_amount = parseInt(pn.find('[data-json="loan_amount"] input').val());
 // 			var sales_price = parseInt(pn.find('[data-json="sales_price"] input').val());
@@ -387,7 +405,7 @@
 			var pmi_amount = d.loan_balance * d.mi_rate / 12 / 100;
 			
 			var data = amortTable(d.loan_balance, d.apr, num_payments);
-			console.log(data);
+			
 			// appreciation and house value
 			
 			data.house_value = data.period.map(function(i) {
@@ -792,7 +810,7 @@
 			$('.go').click(function(e) {
 				e.preventDefault(); 
 				calcTable('mortgage'); 
-				calcAppartment('appartment');
+// 				calcAppartment('appartment');
 			});
 			
 			$('[name="apporsales"]').click(function(e) {
@@ -910,7 +928,7 @@
 		
 		</div>
 		
-		<div class="container appartment-form left">
+		<!--div class="container appartment-form left">
 			<h4>Appartment</h4>
 			
 			Monthly Rent, Including Parking, Storage and Pet Fees:
@@ -943,7 +961,7 @@
 				<input type="edit" value="20" />
 			</div>
 		
-		</div>
+		</div-->
 	</div>
 	
 	<button class="go">Go</button>
@@ -987,7 +1005,7 @@
 		</table>
 	</div>
 	
-	<div class="left">
+	<!--div class="left">
 		<table class="amort_table appartment">
 			<thead>
 				<tr>
@@ -1002,7 +1020,7 @@
 			
 			</tbody>
 		</table>
-	</div>
+	</div-->
 
 				
 	
