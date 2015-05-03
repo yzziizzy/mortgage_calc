@@ -121,8 +121,8 @@
 	}
 
 	.mg-line7-color, .mg-line7-legend-color, .mg-hover-line7-color, .mg-area7-color {
-		stroke: silver;
-		fill: silver;
+		stroke: cyan;
+		fill: cyan;
 	}
 
 	.mg-line8-color, .mg-line8-legend-color, .mg-hover-line8-color, .mg-area8-color {
@@ -428,7 +428,7 @@
 			
 			data.ltv = [];
 			data.pmi = [];
-			for(var i = 0; i < num_payments; i++) {
+			for(var i = 0; i <= num_payments; i++) {
 				// prolly a bug here: loan balance is the ending balance
 				var ltv = parseFloat((data.loan_balance[i] / d.purchase_price).toFixed(2)); 
 				data.ltv[i] = ltv;
@@ -456,6 +456,7 @@
 			
 			data.cash_spent = accumulate(data.direct_costs, d.closing_costs + downpayment, true);
 			
+			data.total_costs = sum(data.direct_costs, data.overhead);
 			
 			
 			function accumulate(arr, init, begin) {
@@ -468,6 +469,14 @@
 					if(!begin) o.push(acc);
 				}
 				
+				return o;
+			}
+			
+			function sum(a, b) {
+				var o = [];
+				for(var i = 0; i < a.length; i++) {
+					o.push(a[i] + b[i]);
+				}
 				return o;
 			}
 			
@@ -519,6 +528,7 @@
 				['Appreciation', data.appreciation],
 				['Direct Costs', data.direct_costs],
 				['Overhead', data.overhead],
+				['Total Costs', data.total_costs],
 			])
 			;
 			mkChart('.hae-chart', "Capital", [
