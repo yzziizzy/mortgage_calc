@@ -115,6 +115,22 @@
 		fill: #fff;
 	}
 	
+	.mg-line6-color, .mg-line6-legend-color, .mg-hover-line6-color, .mg-area6-color {
+		stroke: purple;
+		fill: purple;
+	}
+
+	.mg-line7-color, .mg-line7-legend-color, .mg-hover-line7-color, .mg-area7-color {
+		stroke: silver;
+		fill: silver;
+	}
+
+	.mg-line8-color, .mg-line8-legend-color, .mg-hover-line8-color, .mg-area8-color {
+		stroke: pink;
+		fill: pink;
+	}
+	
+
 	</style>
 
 	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.0/jquery.min.js"></script>
@@ -362,6 +378,7 @@
 			d.monthly_interest = d.apr  / 12; // this works with APR's
 			var num_payments = d.term * 12;
 			d.property_tax_rate = .012; 
+			d.property_tax_rate_monthly = annualToMonthlyInterest(d.property_tax_rate); 
 			
 			var downpayment = d.purchase_price - d.loan_balance;
 			
@@ -405,7 +422,7 @@
 			
 			data.property_tax = data.house_value.map(function(hv) {
 				// BUG: APR or compound interest? should go off assessment
-				return (d.property_tax_rate / 12) * hv;
+				return (d.property_tax_rate_monthly) * hv;
 			});
 			
 			
@@ -423,6 +440,36 @@
 				
 			}
 			
+			data.direct_costs = data.period.map(function(i) {
+				return data.insurance[i] +
+					data.pmi[i] +
+					data.interest[i] +
+					data.property_tax[i];
+				
+				
+			});
+			
+			
+			
+			data.acc_direct_costs = accumulate(data.direct_costs, d.closing_costs, true);
+			
+			
+			data.cash_spent = accumulate(data.direct_costs, d.closing_costs + downpayment, true);
+			
+			
+			
+			function accumulate(arr, init, begin) {
+				var acc = init || 0;
+				var o = [];
+			
+				for(var i = 0; i < arr.length; i++) {
+					if(begin) o.push(acc);
+					acc += arr[i];
+					if(!begin) o.push(acc);
+				}
+				
+				return o;
+			}
 			
 			function inchworm(arr, first, fn) {
 				var o = [];
@@ -470,6 +517,7 @@
 				['Principle', data.principle], 
 				['Interest', data.interest],
 				['Appreciation', data.appreciation],
+				['Direct Costs', data.direct_costs],
 				['Overhead', data.overhead],
 			])
 			;
@@ -477,6 +525,8 @@
 				['House Value', data.house_value], 
 				['Appreciation', data.acc_appreciation],
 				['Equity', data.equity],
+				['Direct Costs', data.acc_direct_costs],
+				['Cash Outlay', data.cash_spent],
 				['Loan Balance', data.loan_balance],
 			]);
 			
@@ -628,14 +678,6 @@
 		function mkChart(sel, title, data) {
 			
 			
-			var linecolors = [
-				'yellow',
-				'red',
-				'pink',
-				'silver',
-			];
-				
-			
 			var legend = [];
 			
 			var d2 = data.map(function(ds) {
@@ -655,10 +697,11 @@
 			MG.data_graphic({
 				title: title,
 				data: d2,
-				width: 1000,
-				height: 400,
+				width: 1100,
+				height: 700,
 				area: false,
 				right: 100,
+				left: 70,
 				target: sel,
 				x_accessor: 'period',
 				y_accessor: 'value',
