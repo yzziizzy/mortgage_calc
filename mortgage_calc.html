@@ -325,7 +325,7 @@
 		
 		
 		// initialize any values given in the url
-		$(function(){
+		$(function(){ return;
 			var d = _.mapObject(whyIsntThisBuiltIn(window.location.hash.replace(/^#/, '')), parseFloat);
 			
 			for(var k in d) {
@@ -345,6 +345,7 @@
 		warning about roof replacement
 		total liability
 		total appreciation - total maintenance
+		rental income
 		
 		"other" monthly/yearly costs 
 		*/
@@ -390,6 +391,7 @@
 			d.app_rate /= 100;
 			d.inflation_rate /= 100;
 			d.apr /= 100;
+			d.property_tax_rate /= 100;
 			
 			d.monthly_app_rate = annualToMonthlyInterest(d.app_rate);
 			d.inflation_rate_monthly = annualToMonthlyInterest(d.inflation_rate);
@@ -397,7 +399,7 @@
 			
 			d.monthly_interest = d.apr  / 12; // this works with APR's
 			var num_payments = d.term * 12;
-			d.property_tax_rate = .012; 
+			 
 			d.property_tax_rate_monthly = annualToMonthlyInterest(d.property_tax_rate); 
 			
 			var downpayment = d.purchase_price - d.loan_balance;
@@ -433,8 +435,9 @@
 				return hv - data.loan_balance[i]; 
 			});
 			
+			data.commute_costs = data.period.map(constantValue(d.commute_costs));
 			
-
+			
 			
 			
 			
@@ -486,7 +489,14 @@
 			
 			data.cash_spent = accumulate(data.direct_costs, d.closing_costs + downpayment, true);
 			
-			data.total_costs = sum(data.direct_costs, data.overhead);
+			data.total_costs = sum(data.commute_costs, sum(data.direct_costs, data.overhead));
+			
+			
+			data.acc_total_costs = accumulate(data.total_costs, d.closing_costs, true);
+			
+			data.net_gain = data.period.map(function(i) {
+				return data.equity[i] - downpayment - data.acc_total_costs[i];
+			});
 			
 			
 			// inflation adjustments.
@@ -497,12 +507,12 @@
 			data.inf_equity = mul(data.equity, data.inflation);
 			data.inf_loan_balance = mul(data.loan_balance, data.inflation);
 			data.inf_overhead = data.overhead;
+			data.inf_commute_costs = data.commute_costs;
 			
-			// can't just multiply thi one like above because some part of it isn't commutative
+			// can't just multiply this one like above because some part of it isn't commutative
 			data.inf_acc_appreciation = data.period.map(function(i) {
 				return d.purchase_price * (cmpInt(d.monthly_app_rate - d.inflation_rate_monthly, i) - 1);
 			});
-			
 			
 			
 			data.inf_direct_costs = data.period.map(function(i) {
@@ -514,9 +524,18 @@
 			
 			data.inf_acc_direct_costs = accumulate(data.inf_direct_costs, d.closing_costs, true);
 			
-			data.inf_total_costs = sum(data.inf_direct_costs, data.inf_overhead);
+			data.inf_total_costs = sum(data.inf_commute_costs, sum(data.inf_direct_costs, data.inf_overhead));
+			
+			data.inf_acc_total_costs = accumulate(data.inf_total_costs, d.closing_costs, true);
+			
 			
 			data.inf_cash_spent = accumulate(data.inf_direct_costs, d.closing_costs + downpayment, true);
+			
+			data.inf_net_gain = data.period.map(function(i) {
+				return data.inf_equity[i] - downpayment - data.inf_acc_total_costs[i];
+			});
+			
+			
 			
 			
 			function accumulate(arr, init, begin) {
@@ -582,8 +601,8 @@
 					data.house_value[i],
 					data.appreciation[i],
 					data.acc_appreciation[i],
-					data.overhead[i]
-					
+					data.overhead[i],
+					data.net_gain[i]
 					
 				));
 			}
@@ -605,6 +624,7 @@
 				['Direct Costs', data.acc_direct_costs],
 				['Cash Outlay', data.cash_spent],
 				['Loan Balance', data.loan_balance],
+				['Net Gain', data.net_gain],
 			]);
 			
 			mkChart('.infcap-chart', "Capital, Inflation Adjusted", [
@@ -614,6 +634,7 @@
  				['Direct Costs', data.inf_acc_direct_costs],
 				['Cash Outlay', data.inf_cash_spent],
  				['Loan Balance', data.inf_loan_balance],
+ 				['Net Gain', data.inf_net_gain],
 			]);
 			
 			return;
@@ -916,14 +937,29 @@
 				<input data-json="commute_costs" type="edit" value="200" />
 			</div>
 		
-			Annual Taxable Income:
+			Net Rental Income, Monthly
+			<div class="item editable">
+				<input data-json="monthly_rental_income" type="edit" value="0" />
+			</div>
+		
+			Annual Property Tax Rate
+			<div class="item editable">
+				<input data-json="property_tax_rate" type="edit" value="1.2" />
+			</div>
+		
+			Adjusted Gross Income: (taxable income after deductions)
 			<div class="item editable">
 				<input data-json="annual_taxes" type="edit" value="0" />
 			</div>
 
-			Effective Tax Rate:
+			Filing Status:
 			<div class="item editable">
-				<input data-json="tax_rate" type="edit" value="0" />
+				<select data-json="tax_filing_status">
+					<option selected value="single">Single</option>
+					<option value="married">Married, Filing Jointly</option>
+					<option value="mfs">Married, Filing Separately</option>
+					<option value="head">Head Of Household</option>
+				</select>
 			</div>
 		
 		</div>
@@ -988,6 +1024,7 @@
 					<th>Appreciation</th>
 					<th>Total Appr.</th>
 					<th>Overhead</th>
+					<th>Net Gain</th>
 					<!--th>Total Insurance</th>
 					<th>Appreciation</th>
 					<th>House Value</th>
