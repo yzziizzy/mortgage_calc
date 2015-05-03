@@ -370,10 +370,12 @@
 			//console.log(closing_costs);
 			
 			d.app_rate /= 100;
+			d.inflation_rate /= 100;
+			d.apr /= 100;
 			
 			d.monthly_app_rate = annualToMonthlyInterest(d.app_rate);
+			d.inflation_rate_monthly = annualToMonthlyInterest(d.inflation_rate);
 			
-			d.apr = d.apr / 100;
 			
 			d.monthly_interest = d.apr  / 12; // this works with APR's
 			var num_payments = d.term * 12;
@@ -392,6 +394,10 @@
 				return d.purchase_price * cmpInt(d.monthly_app_rate, i);
 			});
 			
+			data.inflation = data.period.map(function(i) {
+				return 1 / cmpInt(d.monthly_app_rate, i);
+			});
+			
 			data.acc_appreciation = data.period.map(function(i) {
 				return d.purchase_price * (cmpInt(d.monthly_app_rate, i) - 1);
 			});
@@ -404,6 +410,10 @@
 			data.equity = data.house_value.map(function(hv, i) {
 				return hv - data.loan_balance[i]; 
 			});
+			
+			
+
+			
 			
 			
 			
@@ -459,6 +469,13 @@
 			data.total_costs = sum(data.direct_costs, data.overhead);
 			
 			
+			data.inf_house_value = mul(data.house_value, data.inflation);
+			data.inf_equity = mul(data.equity, data.inflation);
+			data.inf_acc_appreciation = mul(data.acc_appreciation, data.inflation);
+			data.inf_loan_balance = mul(data.loan_balance, data.inflation);
+			
+			
+			
 			function accumulate(arr, init, begin) {
 				var acc = init || 0;
 				var o = [];
@@ -476,6 +493,13 @@
 				var o = [];
 				for(var i = 0; i < a.length; i++) {
 					o.push(a[i] + b[i]);
+				}
+				return o;
+			}
+			function mul(a, b) {
+				var o = [];
+				for(var i = 0; i < a.length; i++) {
+					o.push(a[i] * b[i]);
 				}
 				return o;
 			}
@@ -538,6 +562,15 @@
 				['Direct Costs', data.acc_direct_costs],
 				['Cash Outlay', data.cash_spent],
 				['Loan Balance', data.loan_balance],
+			]);
+			
+			mkChart('.hae-chart', "Capital, Inflation Adjusted", [
+				['House Value', data.inf_house_value], 
+				['Appreciation', data.inf_acc_appreciation],
+				['Equity', data.inf_equity],
+// 				['Direct Costs', data.acc_direct_costs],
+// 				['Cash Outlay', data.cash_spent],
+ 				['Loan Balance', data.inf_loan_balance],
 			]);
 			
 			return;
@@ -800,6 +833,11 @@
 			<div class="item editable kidleft">
 				<input type="radio" name="apporsales" value="app" checked="checked" style="width:5%;"/>
 				<input data-json="app_rate" type="edit" value="4" style="width:80%;" />
+			</div>
+			
+			Inflation Rate: (in the long term on the grand scale, appreciation cannot be higher than inflation)
+			<div class="item editable kidleft">
+				<input data-json="inflation_rate" type="edit" value="4" style="width:80%;" />
 			</div>
 			
 			Resell Price / Months After Purchase / Closing Costs
