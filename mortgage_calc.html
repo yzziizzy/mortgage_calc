@@ -1,6 +1,11 @@
 <html>
 <head>
 	<meta charset="utf8"> 
+	
+	<link rel="stylesheet" type="text/css" href="http://cdnjs.cloudflare.com/ajax/libs/metrics-graphics/2.4.0/metricsgraphics.min.css" />
+	<link rel="stylesheet" type="text/css" href="./bada55.css" />
+
+	
 	<style>
 		
 		body {
@@ -93,15 +98,32 @@
 	.go {
 		margin: 20px;
 	}
+	
+	
+	/* chart */
+	.mg-x-axis text, .mg-y-axis text, .mg-histogram .axis text {
+		fill: #fff;
+	}
+	
+	.mg-markers text {
+		fill: #fff;
+	}
+	text {
+		fill: #fff;
+	}
+	.mg-active-datapoint {
+		fill: #fff;
+	}
+	
 	</style>
 
-	<link rel="stylesheet" type="text/css" href="./bada55.css" />
 	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.0/jquery.min.js"></script>
 	<script src="http://cdnjs.cloudflare.com/ajax/libs/floatthead/1.2.10/jquery.floatThead.min.js"></script>
 	<script src="http://cdnjs.cloudflare.com/ajax/libs/moment.js/2.1.0/moment.min.js"></script>
 	<script src="http://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.5.1/underscore-min.js"></script>
 	<script src="http://cdnjs.cloudflare.com/ajax/libs/handlebars.js/1.0.0/handlebars.min.js"></script>
-	<!--script src="http://cdnjs.cloudflare.com/ajax/libs/Chart.js/1.0.2/Chart.min.js"></script-->
+	<script src="http://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
+	<script src="http://cdnjs.cloudflare.com/ajax/libs/metrics-graphics/2.4.0/metricsgraphics.js"></script>
 	<script>
 		
 		function min(a,b) { return a < b ? a : b };
@@ -290,7 +312,9 @@
 		price/sqft
 		warning about roof replacement
 		total liability
+		total appreciation - total maintenance
 		
+		"other" monthly/yearly costs 
 		*/
 		function calcTable(parentClass) {
 			
@@ -339,6 +363,8 @@
 			var num_payments = d.term * 12;
 			d.property_tax_rate = .012; 
 			
+			var downpayment = d.purchase_price - d.loan_balance;
+			
 			var pmi_amount = d.loan_balance * d.mi_rate / 12 / 100;
 			
 			var data = amortTable(d.loan_balance, d.apr, num_payments);
@@ -355,6 +381,11 @@
 			
 			data.appreciation = data.period.map(function(i) {
 				return d.purchase_price * (cmpInt(d.monthly_app_rate, i) - cmpInt(d.monthly_app_rate, i-1));
+			});
+			
+			
+			data.equity = data.house_value.map(function(hv, i) {
+				return hv - data.loan_balance[i]; 
 			});
 			
 			
@@ -435,7 +466,19 @@
 			}
 			
 			
-			//mkChart('.pie-chart', num_payments, data.principle);
+			mkChart('.pie-chart', "Cash Flow", [
+				['Principle', data.principle], 
+				['Interest', data.interest],
+				['Appreciation', data.appreciation],
+				['Overhead', data.overhead],
+			])
+			;
+			mkChart('.hae-chart', "Capital", [
+				['House Value', data.house_value], 
+				['Appreciation', data.acc_appreciation],
+				['Equity', data.equity],
+				['Loan Balance', data.loan_balance],
+			]);
 			
 			return;
 			
@@ -582,17 +625,8 @@
 		
 		
 		
-		function mkChart(sel, span, data) {
+		function mkChart(sel, title, data) {
 			
-			var opts = {
-				scaleShowGridLines : false,
-				scaleGridLineColor : "rgba(0,0,0,.05)",
-				pointDot : false,
-				datasetStrokeWidth : 1,
-				datasetFill : false,
-				
-				
-			};
 			
 			var linecolors = [
 				'yellow',
@@ -602,65 +636,42 @@
 			];
 				
 			
-			var labels = [];
-			for(var i = 0; i < span; i++) {
-				if(i % 12 == 0) 
-					labels.push(i + 'Y');
-				else 
-					labels.push('');
-			}
+			var legend = [];
 			
-			
-			var chartData = {
-				labels: labels,
-				datasets: [
-					{
-						label: "My First dataset",
-						fillColor: "rgba(220,220,220,0.2)",
-						strokeColor: "rgba(220,220,220,1)",
-						pointColor: "rgba(220,220,220,1)",
-						pointStrokeColor: "#fff",
-						pointHighlightFill: "#fff",
-						pointHighlightStroke: "rgba(220,220,220,1)",
-						data: data
-					},
-				]
-				
-			};
-			
-			
-			/*
-			
-			var data = {
-				labels: ["January", "February", "March", "April", "May", "June", "July"],
-				datasets: [
-					{
-						label: "My First dataset",
-						fillColor: "rgba(220,220,220,0.2)",
-						strokeColor: "rgba(220,220,220,1)",
-						pointColor: "rgba(220,220,220,1)",
-						pointStrokeColor: "#fff",
-						pointHighlightFill: "#fff",
-						pointHighlightStroke: "rgba(220,220,220,1)",
-						data: [65, 59, 80, 81, 56, 55, 40]
-					},
-					{
-						label: "My Second dataset",
-						fillColor: "rgba(151,187,205,0.2)",
-						strokeColor: "rgba(151,187,205,1)",
-						pointColor: "rgba(151,187,205,1)",
-						pointStrokeColor: "#fff",
-						pointHighlightFill: "#fff",
-						pointHighlightStroke: "rgba(151,187,205,1)",
-						data: [28, 48, 40, 19, 86, 27, 90]
+			var d2 = data.map(function(ds) {
+				legend.push(ds[0]);
+				return ds[1].map(function(x, k) {
+					return {
+						period: k,
+						value: x,
 					}
-				]
-			};*/
-
-			var ctx = $(sel)[0].getContext("2d");
-			var chart = new Chart(ctx).Line(chartData, opts);
+				});
+			});
 			
 			
+			console.log(d2);
+			
+//  			d2 = MG.convert.date(d2, 'date');
+			MG.data_graphic({
+				title: title,
+				data: d2,
+				width: 1000,
+				height: 400,
+				area: false,
+				right: 100,
+				target: sel,
+				x_accessor: 'period',
+				y_accessor: 'value',
+				yax_units: '$',
+				xax_count: 12,
+				decimals: 0,
+				legend: legend,
+			});
+			
+// 			var ctx = $(sel)[0].getContext("2d");
+// 			var chart = new Chart(ctx).Line(chartData, opts);
+// 			
+// 			
 			
 		}
 		
@@ -821,7 +832,9 @@
 	
 	<button class="go">Go</button>
 	
-	<canvas class="pie-chart" width="600" height="300"></canvas>
+<!-- 	<canvas class="pie-chart" width="600" height="300"></canvas> -->
+	<div class="pie-chart" ></div>
+	<div class="hae-chart" ></div>
 
 	
 	<div class="left">
