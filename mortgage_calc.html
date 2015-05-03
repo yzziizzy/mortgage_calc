@@ -394,8 +394,12 @@
 				return d.purchase_price * cmpInt(d.monthly_app_rate, i);
 			});
 			
+			// perhaps these have backwards names
 			data.inflation = data.period.map(function(i) {
-				return 1 / cmpInt(d.monthly_app_rate, i);
+				return 1 / cmpInt(d.inflation_rate_monthly, i);
+			});
+			data.inv_inflation = data.period.map(function(i) {
+				return cmpInt(d.inflation_rate_monthly, i);
 			});
 			
 			data.acc_appreciation = data.period.map(function(i) {
@@ -403,7 +407,7 @@
 			});
 			
 			data.appreciation = data.period.map(function(i) {
-				return d.purchase_price * (cmpInt(d.monthly_app_rate, i) - cmpInt(d.monthly_app_rate, i-1));
+				return d.purchase_price * (cmpInt(d.monthly_app_rate, i+1) - cmpInt(d.monthly_app_rate, i));
 			});
 			
 			
@@ -456,9 +460,7 @@
 					data.interest[i] +
 					data.property_tax[i];
 				
-				
 			});
-			
 			
 			
 			data.acc_direct_costs = accumulate(data.direct_costs, d.closing_costs, true);
@@ -469,11 +471,34 @@
 			data.total_costs = sum(data.direct_costs, data.overhead);
 			
 			
+			// inflation adjustments.
+			// note that some values stay constant relative to inflation
+			
+			
 			data.inf_house_value = mul(data.house_value, data.inflation);
 			data.inf_equity = mul(data.equity, data.inflation);
-			data.inf_acc_appreciation = mul(data.acc_appreciation, data.inflation);
 			data.inf_loan_balance = mul(data.loan_balance, data.inflation);
+			data.inf_overhead = data.overhead;
 			
+			// can't just multiply thi one like above because some part of it isn't commutative
+			data.inf_acc_appreciation = data.period.map(function(i) {
+				return d.purchase_price * (cmpInt(d.monthly_app_rate - d.inflation_rate_monthly, i) - 1);
+			});
+			
+			
+			
+			data.inf_direct_costs = data.period.map(function(i) {
+				return data.insurance[i] +
+					data.pmi[i] * data.inflation[i] + // BUG: does pmi rise?
+					data.interest[i] * data.inflation[i] + // interest payments are chiseled into the contract
+					data.property_tax[i];
+			});
+			
+			data.inf_acc_direct_costs = accumulate(data.inf_direct_costs, d.closing_costs, true);
+			
+			data.inf_total_costs = sum(data.inf_direct_costs, data.inf_overhead);
+			
+			data.inf_cash_spent = accumulate(data.inf_direct_costs, d.closing_costs + downpayment, true);
 			
 			
 			function accumulate(arr, init, begin) {
@@ -564,12 +589,12 @@
 				['Loan Balance', data.loan_balance],
 			]);
 			
-			mkChart('.hae-chart', "Capital, Inflation Adjusted", [
+			mkChart('.infcap-chart', "Capital, Inflation Adjusted", [
 				['House Value', data.inf_house_value], 
 				['Appreciation', data.inf_acc_appreciation],
 				['Equity', data.inf_equity],
-// 				['Direct Costs', data.acc_direct_costs],
-// 				['Cash Outlay', data.cash_spent],
+ 				['Direct Costs', data.inf_acc_direct_costs],
+				['Cash Outlay', data.inf_cash_spent],
  				['Loan Balance', data.inf_loan_balance],
 			]);
 			
@@ -926,6 +951,7 @@
 <!-- 	<canvas class="pie-chart" width="600" height="300"></canvas> -->
 	<div class="pie-chart" ></div>
 	<div class="hae-chart" ></div>
+	<div class="infcap-chart" ></div>
 
 	
 	<div class="left">
