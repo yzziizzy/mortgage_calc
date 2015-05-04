@@ -544,6 +544,9 @@
 			
 			data.inf_cash_spent = accumulate(sum(data.inf_direct_costs, data.inf_principle), d.closing_costs + downpayment, true);
 			
+			data.inf_gross_gain = data.period.map(function(i) {
+				return data.inf_equity[i] - downpayment - data.inf_acc_direct_costs[i];
+			});
 			data.inf_net_gain = data.period.map(function(i) {
 				return data.inf_equity[i] - downpayment - data.inf_acc_total_costs[i];
 			});
@@ -650,6 +653,7 @@
 				['Cash Outlay', data.inf_cash_spent],
  				['Loan Balance', data.inf_loan_balance],
  				['Net Gain', data.inf_net_gain],
+ 				['Gross Gain', data.inf_gross_gain],
  				['Ref @ ' + (d.reference_rate*100) + '%', data.inf_reference_line],
 			]);
 			
@@ -1025,10 +1029,16 @@
 	
 <!-- 	<canvas class="pie-chart" width="600" height="300"></canvas> -->
 	<div class="pie-chart" ></div>
+	<hr>
 	<div class="hae-chart" ></div>
+	<hr>
 	<div class="infcap-chart" ></div>
 
 	
+	<br>
+	<br>
+	<br>
+	<h2>Figures Below In Nominal Dollars</h2>
 	<div class="left">
 		<table class="amort_table mortgage">
 			<thead>
