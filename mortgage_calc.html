@@ -15,10 +15,6 @@
 			width: 100% !important;
 		}
 		
-	
-	
-	
-	
 		th {
 			color: #222222;
 			background-color: #7a9a15;
@@ -339,6 +335,50 @@
 		});
 		
 		
+		// 2015
+		var taxBrackets = {
+			single: {
+/*				
+				9225: 10, 
+15 	9226
+25 	37451 
+28 	90751 
+33 	189301 
+35 	411501 
+39.6 	413201
+
+
+10% 	Up to $18,450
+15% 	$18,451 to $74,900 
+25% 	$74,901 to $151,200 
+28% 	$151,201 to $230,450 
+33% 	$230,451 to $411,500 
+35% 	$411,501 to $464,850 
+39.6% 	$464,851 or more 
+			
+
+10% 	Up to $9,225 	
+15% 	9,226 to $37,450 
+25% 	$37,451 to $75,600 
+28% 	$75,601 to $115,225 
+33% 	$115,226 to $205,750 	
+35% 	$205,751 to $232,425 
+39.6% 	$232,426 or more 
+			
+
+10% 	Up to $13,150
+15% 	$13,151 to $50,200
+25% 	$50,201 to $129,600
+28% 	$129,601 to $209,850
+33% 	$209,851 to $411,500
+35% 	$411,501 to $439,000
+39.6% 	$439,001 or more
+	*/		
+			
+		};
+		
+		
+		
 		/*
 		
 		ROIC
@@ -506,7 +546,7 @@
 			data.acc_total_costs = accumulate(data.total_costs, d.closing_costs, true);
 			
 			data.net_gain = data.period.map(function(i) {
-				return data.equity[i] - downpayment - data.acc_total_costs[i];
+				return data.equity[i] + d.monthly_rental_income - downpayment - data.acc_total_costs[i];
 			});
 			
 			
