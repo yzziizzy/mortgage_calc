@@ -668,28 +668,28 @@
 				['Principle', data.principle], 
 				['Interest', data.interest],
 				['Appreciation', data.appreciation],
-				['Direct Costs', data.direct_costs],
-				['Overhead', data.overhead],
+				//['Direct Costs', data.direct_costs],
+				//['Overhead', data.overhead],
 				['Total Costs', data.total_costs],
 			])
 			;
 			mkChart('.hae-chart', "Capital, Nominal Dollars", [
 				['House Value', data.house_value], 
-				['Appreciation', data.acc_appreciation],
+				//['Appreciation', data.acc_appreciation],
 				['Equity', data.equity],
-				['Direct Costs', data.acc_direct_costs],
+				//['Direct Costs', data.acc_direct_costs],
 				['Cash Outlay', data.cash_spent],
 				['Loan Balance', data.loan_balance],
 				['Net Gain', data.net_gain],
-				['Interest Paid', data.acc_interest],
+				//['Interest Paid', data.acc_interest],
 				['Ref @ ' + (d.reference_rate*100) + '%', data.reference_line],
 			]);
 			
 			mkChart('.infcap-chart', "Capital, Inflation Adjusted", [
 				['House Value', data.inf_house_value], 
-				['Appreciation', data.inf_acc_appreciation],
+				//['Appreciation', data.inf_acc_appreciation],
 				['Equity', data.inf_equity],
- 				['Direct Costs', data.inf_acc_direct_costs],
+ 				//['Direct Costs', data.inf_acc_direct_costs],
 				['Cash Outlay', data.inf_cash_spent],
  				['Loan Balance', data.inf_loan_balance],
  				['Net Gain', data.inf_net_gain],
