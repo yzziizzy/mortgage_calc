@@ -568,6 +568,13 @@
 				return d.purchase_price * (cmpInt(d.monthly_app_rate - d.inflation_rate_monthly, i) - 1);
 			});
 			
+			data.inf_appreciation = data.period.map(function(i) {
+				return d.purchase_price * 
+					(cmpInt(d.monthly_app_rate - d.inflation_rate_monthly, i+1) - 
+					cmpInt(d.monthly_app_rate - d.inflation_rate_monthly, i));
+			});
+			
+			
 			
 			data.inf_direct_costs = data.period.map(function(i) {
 				return data.insurance[i] +
@@ -668,13 +675,23 @@
 			
 			
 			$('.pie-chart').html('');
-			mkChart('.pie-chart', "Monthly Cash Flow", [
+			mkChart('.pie-chart', "Monthly Cash Flow, Nominal Dollars", [
 				['Principle', data.principle], 
 				['Interest', data.interest],
 				['Appreciation', data.appreciation],
 				//['Direct Costs', data.direct_costs],
 				//['Overhead', data.overhead],
 				['Total Costs', data.total_costs],
+			]);
+			
+			$('.infpie-chart').html('');
+			mkChart('.infpie-chart', "Monthly Cash Flow, Inflation Adjusted", [
+				['Principle', data.inf_principle], 
+				['Interest', data.inf_interest],
+				['Appreciation', data.inf_appreciation],
+				//['Direct Costs', data.direct_costs],
+				//['Overhead', data.overhead],
+				['Total Costs', data.inf_total_costs],
 			]);
 			
 			$('.loan-chart').html('');
@@ -687,7 +704,17 @@
 				['Loan Balance', data.loan_balance],
 				['Interest Paid', data.acc_interest],
 			]);
-
+			
+			$('.infloan-chart').html('');
+			mkChart('.infloan-chart', "Loan, Inflation Adjusted", [
+				['House Value', data.inf_house_value], 
+				//['Appreciation', data.inf_acc_appreciation],
+				['Equity', data.inf_equity],
+ 				//['Direct Costs', data.inf_acc_direct_costs],
+ 				['Loan Balance', data.inf_loan_balance],
+ 				['Interest Paid', data.inf_acc_interest],
+			]);
+			
 			$('.hae-chart').html('');
 			mkChart('.hae-chart', "Capital, Nominal Dollars", [
 				['House Value', data.house_value], 
@@ -699,16 +726,6 @@
 				['Net Gain', data.net_gain],
 				//['Interest Paid', data.acc_interest],
 				['Ref @ ' + (d.reference_rate*100) + '%', data.reference_line],
-			]);
-			
-			$('.infloan-chart').html('');
-			mkChart('.infloan-chart', "Loan, Inflation Adjusted", [
-				['House Value', data.inf_house_value], 
-				//['Appreciation', data.inf_acc_appreciation],
-				['Equity', data.inf_equity],
- 				//['Direct Costs', data.inf_acc_direct_costs],
- 				['Loan Balance', data.inf_loan_balance],
- 				['Interest Paid', data.inf_acc_interest],
 			]);
 			
 			$('.infcap-chart').html('');
@@ -723,83 +740,6 @@
 			]);
 			
 			return;
-			
-			
-			
-			
-			
-			var taxes = sales_price * property_tax_rate / 12;
-			
-			
-			var pmi = loan_amount * mi_rate / 12;
-			
-			var overhead = monthly_bills + monthly_maint + monthly_other_fees;
-			
-			
-			var _bal = loan_amount;
-			var _total_principle = 0;
-			var _total_interest = 0;
-			var _total_insurance = 0;
-			var _house_value = sales_price;
-			var _equity = downpayment;
-			var _acc_cost = closing_costs;
-			
-			for(var period = 1; period <= (term * 12) >>> 0; period++) {
-				
-				var ltv = parseFloat((_bal / sales_price).toFixed(2));
-				
-				
-				
-				var _pmi = 0;
-				if(ltv > .80) {
-					_pmi = pmi;
-				}
-				
-				var app_amt = _house_value * monthly_app_rate;
-				_house_value += app_amt;
-				
-				var p_i = piRatios(_bal, monthly_interest, payment_amount);
-				
-				_total_principle += p_i.principle;
-				_total_interest += p_i.interest;
-				_total_insurance += insurance;
-				
-				_equity += p_i.principle + app_amt;
-				
-				var _monthly_cost = p_i.interest + insurance + _pmi + overhead
-				_acc_cost += _monthly_cost;
-				
-				//var _tax_savings = 
-				
-				
-				table.append(makeRow(
-					period,
-					_bal,
-					ltv,
-					_pmi,
-					insurance,
-					payment_amount,
-					p_i.interest,
-					p_i.principle,
-					p_i.new_balance,
-					_total_interest,
-					_total_principle,
-					_total_insurance,
-					app_amt,
-					_house_value,
-					_equity,
-					0,
-					overhead,
-					_monthly_cost,
-					_acc_cost,
-					_equity - _acc_cost - downpayment
-				));
-				
-				_bal = p_i.new_balance;
-				
-				
-			}
-			
 		};
 		
 		
@@ -1095,11 +1035,13 @@
 <!-- 	<canvas class="pie-chart" width="600" height="300"></canvas> -->
 	<div class="pie-chart" ></div>
 	<hr>
+	<div class="infpie-chart" ></div>
+	<hr>
 	<div class="loan-chart" ></div>
 	<hr>
-	<div class="hae-chart" ></div>
-	<hr>
 	<div class="infloan-chart" ></div>
+	<hr>
+	<div class="hae-chart" ></div>
 	<hr>
 	<div class="infcap-chart" ></div>
 
