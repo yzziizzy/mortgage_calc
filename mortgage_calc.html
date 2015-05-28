@@ -664,6 +664,7 @@
 			}
 			
 			
+			$('.pie-chart').html('');
 			mkChart('.pie-chart', "Monthly Cash Flow", [
 				['Principle', data.principle], 
 				['Interest', data.interest],
@@ -671,27 +672,48 @@
 				//['Direct Costs', data.direct_costs],
 				//['Overhead', data.overhead],
 				['Total Costs', data.total_costs],
-			])
-			;
+			]);
+			
+			$('.loan-chart').html('');
+			mkChart('.loan-chart', "Loan, Nominal Dollars", [
+				['House Value', data.house_value], 
+				//['Appreciation', data.acc_appreciation],
+				['Equity', data.equity],
+				//['Direct Costs', data.acc_direct_costs],
+
+				['Loan Balance', data.loan_balance],
+				['Interest Paid', data.acc_interest],
+			]);
+
+			$('.hae-chart').html('');
 			mkChart('.hae-chart', "Capital, Nominal Dollars", [
 				['House Value', data.house_value], 
 				//['Appreciation', data.acc_appreciation],
 				['Equity', data.equity],
 				//['Direct Costs', data.acc_direct_costs],
 				['Cash Outlay', data.cash_spent],
-				['Loan Balance', data.loan_balance],
+				//['Loan Balance', data.loan_balance],
 				['Net Gain', data.net_gain],
 				//['Interest Paid', data.acc_interest],
 				['Ref @ ' + (d.reference_rate*100) + '%', data.reference_line],
 			]);
 			
-			mkChart('.infcap-chart', "Capital, Inflation Adjusted", [
+			$('.infloan-chart').html('');
+			mkChart('.infloan-chart', "Loan, Inflation Adjusted", [
 				['House Value', data.inf_house_value], 
 				//['Appreciation', data.inf_acc_appreciation],
 				['Equity', data.inf_equity],
  				//['Direct Costs', data.inf_acc_direct_costs],
-				['Cash Outlay', data.inf_cash_spent],
  				['Loan Balance', data.inf_loan_balance],
+ 				//['Interest Paid', data.inf_acc_interest],
+			]);
+			
+			$('.infcap-chart').html('');
+			mkChart('.infcap-chart', "Capital, Inflation Adjusted", [
+				//['Appreciation', data.inf_acc_appreciation],
+				['Equity', data.inf_equity],
+ 				//['Direct Costs', data.inf_acc_direct_costs],
+				['Cash Outlay', data.inf_cash_spent],
  				['Net Gain', data.inf_net_gain],
  				['Gross Gain', data.inf_gross_gain],
  				['Ref @ ' + (d.reference_rate*100) + '%', data.inf_reference_line],
@@ -1070,7 +1092,11 @@
 <!-- 	<canvas class="pie-chart" width="600" height="300"></canvas> -->
 	<div class="pie-chart" ></div>
 	<hr>
+	<div class="loan-chart" ></div>
+	<hr>
 	<div class="hae-chart" ></div>
+	<hr>
+	<div class="infloan-chart" ></div>
 	<hr>
 	<div class="infcap-chart" ></div>
 
