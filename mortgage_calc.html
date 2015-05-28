@@ -557,6 +557,7 @@
 			data.inf_house_value = mul(data.house_value, data.inflation);
 			data.inf_equity = mul(data.equity, data.inflation);
 			data.inf_principle = mul(data.principle, data.inflation);
+			data.inf_interest = mul(data.interest, data.inflation);
 			data.inf_loan_balance = mul(data.loan_balance, data.inflation);
 			data.inf_reference_line = mul(data.reference_line, data.inflation);
 			data.inf_overhead = data.overhead;
@@ -574,6 +575,8 @@
 					data.interest[i] * data.inflation[i] + // interest payments are chiseled into the contract
 					data.property_tax[i];
 			});
+			
+			data.inf_acc_interest = accumulate(data.inf_interest, 0, true);
 			
 			data.inf_acc_direct_costs = accumulate(data.inf_direct_costs, d.closing_costs, true);
 			
@@ -705,7 +708,7 @@
 				['Equity', data.inf_equity],
  				//['Direct Costs', data.inf_acc_direct_costs],
  				['Loan Balance', data.inf_loan_balance],
- 				//['Interest Paid', data.inf_acc_interest],
+ 				['Interest Paid', data.inf_acc_interest],
 			]);
 			
 			$('.infcap-chart').html('');
