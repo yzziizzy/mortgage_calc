@@ -385,6 +385,14 @@
 // 			
 			//console.log(closing_costs);
 			
+			d.reroof_cost = 300 + // dumpster fee 
+				Math.ceil(d.sqft / 100) * // "squares" on roof BUG: need to take pitch into account
+				(100 + // tear off
+				100 + // install
+				160); // materials
+			
+			var roof_months_left = (d.roof_interval - d.roof_age) * 12
+			
 			d.app_rate /= 100;
 			d.inflation_rate /= 100;
 			d.apr /= 100;
@@ -922,6 +930,28 @@
 				<input data-json="monthly_rental_income" type="edit" value="0" />
 			</div>
 		
+			Age of Roof (Years)
+			<div class="item editable">
+				<input data-json="roof_age" type="edit" value="5" />
+			</div>
+			
+			Roof Replacement Interval (Years)
+			<div class="item editable">
+				<input data-json="roof_interval" type="edit" value="15" />
+			</div>
+			
+			Square Feet Under Roof
+			<div class="item editable">
+				<input data-json="sqft" type="edit" value="1500" />
+			</div>
+			
+			<!--
+			Roof Pitch
+			<div class="item editable">
+				<input data-json="sqft" type="edit" value="1500" />
+			</div-->
+
+			
 			Reference Line APR
 			<div class="item editable">
 				<input data-json="reference_rate" type="edit" value="11" />
