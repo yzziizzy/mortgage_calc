@@ -236,51 +236,6 @@
 		}
 		
 		
-		
-		// crap
-		function periodSuccessor(o) {
-			
-			var n = _.extend({}, o);
-			
-			var ltv = parseFloat((o.loan_balance / o.purchase_price).toFixed(2));
-			
-			var pmi = 0;
-			if(ltv > .80) {
-				pmi = o.pmi;
-			}
-			
-			var app_amt = o.house_value * o.app_rate / 12;
-			n.house_value += app_amt;
-			
-			var p_i = piRatios(o.loan_balance, o.monthly_interest, o.payment_amount);
-			
-// 			_total_principle += p_i.principle;
-// 			_total_interest += p_i.interest;
-// 			_total_insurance += insurance;
-			
-			n.equity += p_i.principle + app_amt;
-			
-			var _monthly_cost = p_i.interest + o.insurance + pmi + o.overhead
-			n.acc_cost += _monthly_cost;
-			
-			
-
-			n.period = o.period + 1;
-			n.ltv = ltv;
-			n.pmi = pmi,
-			n.interest = p_i.interest;
-			n.principle = p_i.principle;
-			n.loan_balance = p_i.new_balance;
-
-			n.appreciation = app_amt;
-			n.equity = n.acc_cost - o.downpayment
-			
-			n.loan_balance = p_i.new_balance;
-			
-			return n;
-		}
-		
-		
 		// probably has floating point precision problems
 		function amortTable(loanAmount, apr, months) {
 			var o = {
