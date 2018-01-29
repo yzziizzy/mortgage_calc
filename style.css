@@ -1,0 +1,78 @@
+.control {
+	padding: 5px;
+	
+}
+
+.control > label {
+	display: inline-block;
+	width: 250px;
+}
+
+.control > input {
+	margin-right: 4px;
+}
+
+.row {
+	padding: 4px;
+}
+
+.row .title {
+	display: inline-block;
+	min-width: 250px;
+	font-weight: bold;
+}
+
+.radio-option {
+	border: 1px solid #bada55;
+	margin-top: 4px;
+	background-color: #000000;
+}
+
+
+.radio-option legend {
+	background-color: #223322;
+	color: #bada55;
+	padding: 0 8;
+	border-left: 1px solid #bada55;
+	border-right: 1px solid #bada55;
+	padding-left: 4px; 
+	padding-right: 6px; 
+	cursor: pointer;
+	border-radius: 4px;
+}
+
+.control.radio {
+	border: 1px solid #bada55;
+	background-color: #223322;
+}
+
+.control.radio legend {
+	background-color: #223322;
+	color: #bada55;
+	border-left: 1px solid #bada55;
+	border-right: 1px solid #bada55;
+	padding-left: 4px; 
+	padding-right: 6px;
+	border-radius: 4px;
+}
+
+legend > input[type="radio"] {
+	display: inline-block;
+	margin-right: 8px;
+}
+
+
+
+.tab-bar > .tab-bar-tab.active {
+	background-color: #bada55;
+	font-weight: bold;
+	color: #000000;
+}
+
+.tab-bar > .tab-bar-tab {
+	float: left;
+	border: 1px solid green;
+	padding: 8px;
+	cursor: pointer;
+}
+

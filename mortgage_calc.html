@@ -4,6 +4,7 @@
 	
 	<link rel="stylesheet" type="text/css" href="http://cdnjs.cloudflare.com/ajax/libs/metrics-graphics/2.4.0/metricsgraphics.min.css" />
 	<link rel="stylesheet" type="text/css" href="./bada55.css" />
+	<link rel="stylesheet" type="text/css" href="./style.css" />
 
 	
 	<style>
@@ -12,7 +13,7 @@
 			padding: 10px;
 			margin: 0px;
 			font-family: 'Sans Serif';
-			width: 100% !important;
+/* 			width: 100% !important; */
 		}
 		
 		th {
@@ -26,6 +27,8 @@
 			padding-bottom: 5px;
 			padding-left: 10px;
 			padding-right: 5px;
+			
+			white-space: nowrap;
 		}
 		table {
 			border-collapse: collapse;
@@ -141,6 +144,11 @@
 	<script src="http://cdnjs.cloudflare.com/ajax/libs/handlebars.js/1.0.0/handlebars.min.js"></script>
 	<script src="http://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
 	<script src="http://cdnjs.cloudflare.com/ajax/libs/metrics-graphics/2.4.0/metricsgraphics.js"></script>
+	
+	<script src="lib.js"></script>
+	<script src="calc.js"></script>
+	<script src="footnotes.js"></script>
+	
 	<script>
 		
 		function min(a,b) { return a < b ? a : b };
@@ -189,82 +197,12 @@
 		
 		//var mon_interest = ARP / 12; // only works for /APR/, not "annual interest rate"
 		
-		/*
-		A = periodic payment amount
-		P = net principle
-		i = periodic interest rate (mon_interest above)
-		n = total number of payments (first payment is 30 days after the loan originates)
-		p(t) = principle remaining at time t
-		
-		A = P(((i(1_i)^n) / ((1+i)^n - 1))
-		  = (Pi) / (1- (1+i)^-n)
-		  = P(i + ( i / ((1+i)^n - 1) ) 
-		
-		p(t) / P = 1 - ( ((1+it^t - 1)) / ((1+i)^n - 1) )
-		
-		
-		calculation of mortgage stuff:
-		
-		1) calculate the monthly payment amount using loan amount and interest
-		
-		2) for each pay period, 
-			calc interest i_p = (remaining balance * monthly interest)
-			calc payment principle = payment - i_p
-			calc new blance = first balance - payment principle
-		*/
 		
 		function makeRow() {
 			return $('<tr>' + Array.prototype.slice.apply(arguments).map(function(x) { return '<td>' + (x.toMoney && x.toMoney() || x) + '</td>' }).join(' ') + '</tr>');
 		}
 		
-		function monthlyPayment(loan_amount, monthly_interest, num_payments) {
-			return (loan_amount * monthly_interest) / (1 - Math.pow(1 + monthly_interest, -num_payments) );
-		}
 		
-		function piRatios(balance, monthly_interest, payment_amount) {
-			var i_p = balance * monthly_interest;
-			return {
-				principle: payment_amount - i_p,
-				interest: i_p,
-				new_balance: balance - payment_amount + i_p,
-			};
-		}
-		
-		
-		function annualToMonthlyInterest(annual) {
-			return Math.pow(1 + annual, 1/12) - 1;
-		}
-		
-		
-		// probably has floating point precision problems
-		function amortTable(loanAmount, apr, months) {
-			var o = {
-				principle: [],
-				interest: [],
-				payment: [],
-				period: [],
-				loan_balance: [],
-				ending_balance: [],
-			};
-			
-			var payment = monthlyPayment(loanAmount, apr / 12, months);
-			
-			for(var i = 0; i <= months; i++) {
-				
-				var p_i = piRatios(loanAmount, apr / 12, payment);
-				
-				o.loan_balance[i] = loanAmount;
-				loanAmount = p_i.new_balance;
-				
-				o.payment[i] = payment;
-				o.principle[i] = p_i.principle;
-				o.interest[i] = p_i.interest;
-				o.ending_balance[i] = p_i.new_balance;
-				o.period[i] = i;
-			}
-			
-			return o;
-		}
 		
 		function prettyPeriod(n) {
 			var y = Math.floor(n / 12);
@@ -330,7 +268,6 @@
 39.6% 	$439,001 or more
 	*/		
 			
-//		};
 		
 		
 		
@@ -351,24 +288,9 @@
 			var pn = $('.' + parentClass + '-form');
 			
 			var d = grabData($('.' + parentClass + '-form'));
-			
+			console.log(d);
 			window.location.hash = $.param(d);
 			
-			
-// 			console.log(d);
-			
-// 			var loan_amount = parseInt(pn.find('[data-json="loan_amount"] input').val());
-// 			var sales_price = parseInt(pn.find('[data-json="sales_price"] input').val());
-// 			var term = parseInt(pn.find('[data-json="term"] input').val());
-// 			var apr = parseFloat(pn.find('[data-json="apr"] input').val()) * .01;
-// 			var closing_costs = parseFloat(pn.find('[data-json="closing_costs"] input').val());
-// 			var mi_rate = parseFloat(pn.find('[data-json="mi_rate"] input').val()) * .01;
-// 			var monthly_bills = parseFloat(pn.find('[data-json="bills_monthly"] input').val());
-// 			var monthly_other_fees = parseFloat(pn.find('[data-json="other_fees_monthly"] input').val());
-// 			var monthly_maint = parseFloat(pn.find('[data-json="maint_monthly"] input').val());
-// 			monthly_maint += parseFloat(pn.find('[data-json="maint_yearly"] input').val()) / 12;
-// 			var monthly_interest = apr  / 12;
-// 			var downpayment = sales_price - loan_amount;
 // 			
 // 			var app_rate = 0;
 // 			var app_or_resell = pn.find('[name="apporsales"]:checked').val();
@@ -383,241 +305,16 @@
 // 				app_rate = .01 * (resell_profit / 12 / 12 / resell_months); // BUG: needs to be compound with respect to sales_price
 // 			}
 // 			
-			//console.log(closing_costs);
 			
-			d.reroof_cost = 300 + // dumpster fee 
-				Math.ceil(d.sqft / 100) * // "squares" on roof BUG: need to take pitch into account
-				(100 + // tear off
-				100 + // install
-				160); // materials
+			var mc = mortgage_calc(d);
+			var data = mc.time_series;
+
 			
-			var roof_months_left = (d.roof_interval - d.roof_age) * 12
-			
-			d.app_rate /= 100;
-			d.inflation_rate /= 100;
-			d.apr /= 100;
-			d.property_tax_rate /= 100;
-			d.reference_rate /= 100;
-			
-			d.monthly_app_rate = annualToMonthlyInterest(d.app_rate);
-			d.inflation_rate_monthly = annualToMonthlyInterest(d.inflation_rate);
-			
-			
-			d.monthly_interest = d.apr  / 12; // this works with APR's
-			var num_payments = d.term * 12;
-			 
-			d.property_tax_rate_monthly = annualToMonthlyInterest(d.property_tax_rate); 
-			d.reference_rate_monthly = annualToMonthlyInterest(d.reference_rate); 
-			
-			var downpayment = d.purchase_price - d.loan_balance;
-			
-			var pmi_amount = d.loan_balance * d.mi_rate / 12 / 100;
-			
-			var data = amortTable(d.loan_balance, d.apr, num_payments);
-			
-			// appreciation and house value
-			
-			data.house_value = data.period.map(function(i) {
-				return d.purchase_price * cmpInt(d.monthly_app_rate, i);
-			});
-			
-			
-			// perhaps these have backwards names
-			data.inflation = data.period.map(function(i) {
-				return 1 / cmpInt(d.inflation_rate_monthly, i);
-			});
-			data.inv_inflation = data.period.map(function(i) {
-				return cmpInt(d.inflation_rate_monthly, i);
-			});
-			
-			data.reference_line = data.period.map(function(i) {
-				return downpayment * cmpInt(d.reference_rate_monthly, i);
-			});
-			
-			data.acc_appreciation = data.period.map(function(i) {
-				return d.purchase_price * (cmpInt(d.monthly_app_rate, i) - 1);
-			});
-			
-			data.appreciation = data.period.map(function(i) {
-				return d.purchase_price * (cmpInt(d.monthly_app_rate, i+1) - cmpInt(d.monthly_app_rate, i));
-			});
-			
-			
-			data.equity = data.house_value.map(function(hv, i) {
-				return hv - data.loan_balance[i]; 
-			});
-			
-			data.acc_interest = accumulate(data.interest, 0, true);
-			
-			data.commute_costs = data.period.map(constantValue(d.commute_costs));
-			
-			
-			
-			
-			
-			
-			function cmpInt(periodic_rate, period) {
-				// A = P(1 + r/n) ^ tn
-				return Math.pow(1 + periodic_rate, period);
-			}
-			
-			var insurance_rate = .0035;
-			var insurance = d.purchase_price * insurance_rate / 12;
-			data.insurance = data.period.map(constantValue(insurance));
-			
-			
-			var overhead = d.bills_monthly + d.maint_monthly + (d.maint_yearly / 12) + d.other_fees_monthly;
-			data.overhead = data.period.map(constantValue(overhead));
-			
-			data.property_tax = data.house_value.map(function(hv) {
-				// BUG: APR or compound interest? should go off assessment
-				return (d.property_tax_rate_monthly) * hv;
-			});
-			
-			
-			data.ltv = [];
-			data.pmi = [];
-			for(var i = 0; i <= num_payments; i++) {
-				// prolly a bug here: loan balance is the ending balance
-				var ltv = parseFloat((data.loan_balance[i] / d.purchase_price).toFixed(2)); 
-				data.ltv[i] = ltv;
-				
-				// mortgage insurance
-				data.pmi[i] = ltv > 0.80 ? pmi_amount : 0;
-				data.payment[i] += data.pmi[i];
-				
-				
-			}
-			
-			data.direct_costs = data.period.map(function(i) {
-				return data.insurance[i] +
-					data.pmi[i] +
-					data.interest[i] +
-					data.property_tax[i];
-				
-			});
-			
-			
-			data.acc_direct_costs = accumulate(data.direct_costs, d.closing_costs, true);
-			
-			
-			data.cash_spent = accumulate(sum(data.direct_costs, data.principle), d.closing_costs + downpayment, true);
-			
-			data.total_costs = sum(data.commute_costs, sum(data.direct_costs, data.overhead));
-			
-			
-			data.acc_total_costs = accumulate(data.total_costs, d.closing_costs, true);
-			
-			data.net_gain = data.period.map(function(i) {
-				return data.equity[i] + d.monthly_rental_income - downpayment - data.acc_total_costs[i];
-			});
-			
-			
-			// inflation adjustments.
-			// note that some values stay constant relative to inflation
-			
-			
-			data.inf_house_value = mul(data.house_value, data.inflation);
-			data.inf_equity = mul(data.equity, data.inflation);
-			data.inf_principle = mul(data.principle, data.inflation);
-			data.inf_interest = mul(data.interest, data.inflation);
-			data.inf_loan_balance = mul(data.loan_balance, data.inflation);
-			data.inf_reference_line = mul(data.reference_line, data.inflation);
-			data.inf_overhead = data.overhead;
-			data.inf_commute_costs = data.commute_costs;
-			
-			// can't just multiply this one like above because some part of it isn't commutative
-			data.inf_acc_appreciation = data.period.map(function(i) {
-				return d.purchase_price * (cmpInt(d.monthly_app_rate - d.inflation_rate_monthly, i) - 1);
-			});
-			
-			data.inf_appreciation = data.period.map(function(i) {
-				return d.purchase_price * 
-					(cmpInt(d.monthly_app_rate - d.inflation_rate_monthly, i+1) - 
-					cmpInt(d.monthly_app_rate - d.inflation_rate_monthly, i));
-			});
-			
-			
-			
-			data.inf_direct_costs = data.period.map(function(i) {
-				return data.insurance[i] +
-					data.pmi[i] * data.inflation[i] + // BUG: does pmi rise?
-					data.interest[i] * data.inflation[i] + // interest payments are chiseled into the contract
-					data.property_tax[i];
-			});
-			
-			data.inf_acc_interest = accumulate(data.inf_interest, 0, true);
-			
-			data.inf_acc_direct_costs = accumulate(data.inf_direct_costs, d.closing_costs, true);
-			
-			data.inf_total_costs = sum(data.inf_commute_costs, sum(data.inf_direct_costs, data.inf_overhead));
-			
-			data.inf_acc_total_costs = accumulate(data.inf_total_costs, d.closing_costs, true);
-			
-			
-			data.inf_cash_spent = accumulate(sum(data.inf_direct_costs, data.inf_principle), d.closing_costs + downpayment, true);
-			
-			data.inf_gross_gain = data.period.map(function(i) {
-				return data.inf_equity[i] - downpayment - data.inf_acc_direct_costs[i];
-			});
-			data.inf_net_gain = data.period.map(function(i) {
-				return data.inf_equity[i] - downpayment - data.inf_acc_total_costs[i];
-			});
-			
-			
-			
-			
-			function accumulate(arr, init, begin) {
-				var acc = init || 0;
-				var o = [];
-			
-				for(var i = 0; i < arr.length; i++) {
-					if(begin) o.push(acc);
-					acc += arr[i];
-					if(!begin) o.push(acc);
-				}
-				
-				return o;
-			}
-			
-			function sum(a, b) {
-				var o = [];
-				for(var i = 0; i < a.length; i++) {
-					o.push(a[i] + b[i]);
-				}
-				return o;
-			}
-			function mul(a, b) {
-				var o = [];
-				for(var i = 0; i < a.length; i++) {
-					o.push(a[i] * b[i]);
-				}
-				return o;
-			}
-			
-			function inchworm(arr, first, fn) {
-				var o = [];
-				var last = first;
-				
-				for(var i = 0; i < arr.length; i++) {
-					o[i] = fn(last, arr[i]);
-					last = arr[i];
-				}
-				
-				return o;
-			}
-			
-			
-			function constantValue(val) {
-				return function() { return val; }
-			}
-			
-			
-			
-			var table = $('.' + parentClass + '.amort_table tbody');
+			// nominal dollars
+			var table = $('.' + parentClass + '.amort_table.nominal tbody');
 			table.html('');
 			
-			for(var i = 0; i < d.term * 12; i++) {
+			for(var i = 0; i < d.loan_term * 12; i++) {
 				table.append(makeRow(
 					prettyPeriod(data.period[i]),
 					data.loan_balance[i],
@@ -636,6 +333,28 @@
 				));
 			}
 			
+			// real dollars
+			table = $('.' + parentClass + '.amort_table.real tbody');
+			table.html('');
+			
+			for(var i = 0; i < d.loan_term * 12; i++) {
+				table.append(makeRow(
+					prettyPeriod(data.period[i]),
+					data.inf_loan_balance[i],
+					// ltv
+					data.inf_pmi[i],
+					data.inf_insurance[i],
+					data.inf_payment[i],
+					data.inf_interest[i],
+					data.inf_principle[i],
+					data.inf_house_value[i],
+					data.inf_appreciation[i],
+					data.inf_acc_appreciation[i],
+					data.inf_overhead[i],
+					data.inf_net_gain[i]
+					
+				));
+			}
 			
 			$('.pie-chart').html('');
 			mkChart('.pie-chart', "Monthly Cash Flow, Nominal Dollars", [
@@ -704,114 +423,8 @@
 			
 			return;
 		};
-		
-		
 
 		
-		function calcAppartment(contClass) {
-			
-			var d = grabData($('.' + contClass + '-form'));
-			
-			var overhead = d.bills + d.ri_amount + d.commute; 
-			
-			var acc = {
-				totalRent: 0,
-				totalOverhead: 0,
-				totalLoss: d.non_ref_fees + d.ref_deposit,
-			};
-			
-			
-			var table = $('.' + contClass + '.amort_table tbody');
-			table.html('');
-			
-			
-			for(var period = 1; period <= (30 * 12) >>> 0; period++) {
-				
-				acc.totalRent += d.rent;
-				acc.totalOverhead += overhead; 
-				acc.totalLoss += d.bills + d.rent; 
-				
-				table.append(makeRow(
-					period,
-					d.rent,
-					overhead,
-					overhead + d.rent,
-					acc.totalLoss
-				));
-			}
-		};
-		
-		
-		function grabData(parent) {
-			var data = {};
-			
-			var formatters = {
-				string: function(x) { return x },
-				pct: function(x) { return parseFloat(x) * .01 },
-				amort: function(x) { return parseFloat(x) / 12 },
-				num: parseFloat,
-			};
-			
-			parent.find('[data-json]').each(function() {
-				var n = $(this);
-				
-				var name = n.attr('data-json');
-				var val = n.val();
-				
-				var fmt = n.attr('fmt') || 'num';
-				console.log(name, val);
-				
-				data[name] = formatters[fmt](val);
-			});
-			
-			return data;
-		};
-		
-		
-		
-		
-		function mkChart(sel, title, data) {
-			
-			
-			var legend = [];
-			
-			var d2 = data.map(function(ds) {
-				legend.push(ds[0]);
-				return ds[1].map(function(x, k) {
-					return {
-						period: k,
-						value: x,
-					}
-				});
-			});
-			
-			
-			console.log(d2);
-			
-//  			d2 = MG.convert.date(d2, 'date');
-			MG.data_graphic({
-				title: title,
-				data: d2,
-				width: 1100,
-				height: 500,
-				area: false,
-				right: 100,
-				left: 70,
-				target: sel,
-				x_accessor: 'period',
-				y_accessor: 'value',
-				yax_units: '$',
-				xax_count: 12,
-				decimals: 0,
-				legend: legend,
-			});
-			
-// 			var ctx = $(sel)[0].getContext("2d");
-// 			var chart = new Chart(ctx).Line(chartData, opts);
-// 			
-// 			
-			
-		}
 		
 		
 		
@@ -839,6 +452,37 @@
 				
 			});
 			
+			
+			// fill in the chart options
+			var chart_options = [
+				{n: 'pmi', l: 'PMI', tt: 'Private Mortgage Insurance. Required for loans with less than 20% equity.' },
+				{n: 'payment', l: 'Payment' },
+				{n: 'interest', l: 'Interest' },
+				{n: 'principle', l: 'Principle'},
+				{n: 'insurance', l: 'Homeowner\'s Insurance'},
+				{n: 'house_value', l: 'House Value'},
+				{n: 'appreciation', l: 'Appreciation (monthly)'},
+				{n: 'loan_balance', l: 'Loan Balance'},
+				{n: 'equity', l: 'Equity'},
+				{n: 'overhead', l: 'Overhead'},
+				{n: 'cash_spent', l: 'Cash Spent'},
+				{n: 'gross_gain', l: 'Gross Gain'},
+				{n: 'net_gain', l: 'Net Gain'},
+				{n: 'reference_line', l: 'Reference Line'},
+				{n: 'total_costs', l: 'Total Costs'},
+				{n: '', l: ''},
+			
+			];
+		
+			
+			/*
+			$('.chart-options').html('').append(chart_options.map(function(co) { 
+				if(co.n == '') return '';
+				return $('<div><input type="checkbox" name="'+co.n+'" /><label>'+co.l+'</label></div>');
+			}));
+			*/
+			
+			
 			//$('.amort_table').floatThead({useAbsolutePositioning: false});
 		});
 	</script>
@@ -846,138 +490,181 @@
 	
 </head>
 <body>
+	<h2>No data is sent to a server. All information is private to your browser and the url string.</h2> 
 	
-	<div class="container-box">
-		<div class="container mortgage-form left">
-			<h4>Mortgage</h4>
+	<div class="tab-group mortgage-form"> 
+	
+		<div title="Mortgage" class="container-box tab active">
+			<scalar name="apr" default="4.99" type="percent">Loan APR</scalar>
+			<scalar name="purchase_price" default="250000" type="dollars">Purchase Price</scalar>
+			<scalar name="loan_amount" default="220000" type="dollars">Loan Amount</scalar>
+			<scalar name="loan_term" default="30" type="time">Loan Term</scalar>
+			<scalar name="closing_costs" default="15000" type="dollars">Closing Costs</scalar>
+			<scalar name="pmi_rate" default="0.52" type="percent">Mortgage Insurance Rate</scalar>
 			
-			APR:
-			<div class="item editable">
-				<input data-json="apr" type="edit" value="4.99" />
-			</div>
+			<radio name="appreciation_mode" title="Appreciation">
+				<opt title="Estimate Rate" value="rate" default="true">
+					<scalar name="app_rate" default="6" type="percent">Appreciation Rate</scalar>
+					
+				</opt>
+				<opt title="Calculate Actual" value="actual">
+					<scalar name="resell_price" default="280000" type="dollars">Resale Price</scalar>
+					<scalar name="resell_months" default="24" type="time">Months After Purchase</scalar>
+					<scalar name="resell_closing_costs" default="0" type="dollars">Resell Closing Costs</scalar>
+				</opt>
+			</radio>
 			
-			Purchase Price:
-			<div class="item editable">
-				<input data-json="purchase_price" type="edit" value="250000" />
-			</div>
-		
-			Loan Amount:
-			<div class="item editable">
-				<input data-json="loan_balance" type="edit" value="220000" />
-			</div>
-		
-			Loan Term:
-			<div class="item editable">
-				<input data-json="term" type="edit" value="30" />
-			</div>
-
-			Closing Costs:
-			<div class="item editable">
-				<input data-json="closing_costs" type="edit" value="15000" />
-			</div>
-
-			Mortgage Insurance Rate:
-			<div class="item editable">
-				<input data-json="mi_rate" type="edit" value="0.52" />
-			</div>
-		
-			Appreciation Rate:
-			<div class="item editable kidleft">
-				<input type="radio" name="apporsales" value="app" checked="checked" style="width:5%;"/>
-				<input data-json="app_rate" type="edit" value="4" style="width:80%;" />
-			</div>
+			<!--fieldset>
+				<legend>Roof Maintenance</legend>
+				
+				<choose name="rooftype" type="roof_types">Roof Type</choose>
+				
+			</fieldset-->
 			
-			Inflation Rate: (in the long term on the grand scale, appreciation cannot be higher than inflation)
-			<div class="item editable kidleft">
-				<input data-json="inflation_rate" type="edit" value="4" style="width:80%;" />
-			</div>
+			<scalar name="maint_yearly" default="1200" type="dollars">Yearly Maintenance Cost (Not including monthy costs)</scalar>
+			<scalar name="maint_monthly" default="120" type="dollars">Monthly Maintenance Cost (Not including yearly costs)</scalar>
 			
-			Resell Price / Months After Purchase / Closing Costs
-			<div class="item editable kidleft" >
-				<input type="radio" name="apporsales" value="sales" style="width:5%;" />
-				<input type="edit" data-json="resell_price" value="280000" style="width:30%;" disabled="disabled" />
-				<input type="edit" data-json="resell_months" value="24" style="width:30%;" disabled="disabled" />
-				<input type="edit" data-json="resell_closing_costs" value="0" style="width:30%;" disabled="disabled" />
-			</div>
+			<scalar name="bills_monthly" default="300" type="dollars">
+				Monthly Electric and Utilities (All house-related bills, not including maintenance above)
+			</scalar>
 			
-			Yearly Maintenance Cost (Not including monthy costs):
-			<div class="item editable">
-				<input data-json="maint_yearly" type="edit" value="1200" />
-			</div>
-
-			Monthly Maintenance Cost (Not including yearly costs):
-			<div class="item editable">
-				<input data-json="maint_monthly" type="edit" value="120" />
-			</div>
+			<scalar name="other_fees_monthly" default="" type="dollars">
+				Other Monthly Fees Not Included Above (HOA Fees, Clubhouse Membership, etc.)
+			</scalar>
 			
-			Monthly Electric and Utilities (All house-related bills, not including maintenance above): 
-			<div class="item editable">
-				<input data-json="bills_monthly" type="edit" value="300" />
-			</div>
+			<scalar name="commute_costs" default="200" type="dollars">
+				Monthly Commute Cost (Gas or Transit Passes)
+			</scalar>
 			
-			Other Monthly Fees Not Included Above (HOA Fees, Clubhouse Membership, etc.):
-			<div class="item editable">
-				<input data-json="other_fees_monthly" type="edit" value="0" />
-			</div>
-
-			Monthly Commute Cost (Gas or Transit Passes):
-			<div class="item editable">
-				<input data-json="commute_costs" type="edit" value="200" />
-			</div>
-		
-			Net Rental Income, Monthly
-			<div class="item editable">
-				<input data-json="monthly_rental_income" type="edit" value="0" />
-			</div>
-		
-			Age of Roof (Years)
-			<div class="item editable">
-				<input data-json="roof_age" type="edit" value="5" />
-			</div>
+			<scalar name="monthly_rental_income" default="" type="dollars">
+				Net Rental Income, Monthly
+			</scalar>
 			
-			Roof Replacement Interval (Years)
-			<div class="item editable">
-				<input data-json="roof_interval" type="edit" value="15" />
-			</div>
+			<scalar name="reference_rate" default="11" type="percent">
+				Reference Line APR 
+				<footnote>
+					Investment of the <b>downpayment</b> at the specified rate 
+					over the same time period
+				</footnote>
+			</scalar>
 			
-			Square Feet Under Roof
-			<div class="item editable">
-				<input data-json="sqft" type="edit" value="1500" />
-			</div>
+			<scalar name="property_tax_rate" default="1.2" type="percent">
+				Annual Property Tax Rate
+			</scalar>
 			
-			<!--
-			Roof Pitch
-			<div class="item editable">
-				<input data-json="sqft" type="edit" value="1500" />
-			</div-->
-
-			
-			Reference Line APR
-			<div class="item editable">
-				<input data-json="reference_rate" type="edit" value="11" />
-			</div>
-		
-			Annual Property Tax Rate
-			<div class="item editable">
-				<input data-json="property_tax_rate" type="edit" value="1.2" />
-			</div>
-		
-			Adjusted Gross Income: (taxable income after deductions)
-			<div class="item editable">
-				<input data-json="annual_taxes" type="edit" value="0" />
-			</div>
-
-			Filing Status:
-			<div class="item editable">
-				<select data-json="tax_filing_status">
-					<option selected value="single">Single</option>
-					<option value="married">Married, Filing Jointly</option>
-					<option value="mfs">Married, Filing Separately</option>
-					<option value="head">Head Of Household</option>
-				</select>
-			</div>
-		
+			<button class="next-tab">Next</button>
 		</div>
+		
+		<div title="Apartment" class="container-box appartment-form tab" style="display:none;">
+			
+			<h3>The cheapest acceptable apartment as an alternative.</h3> 
+			
+			<scalar name="monthly_rent" default="700" type="dollars">Monthly Rent</scalar>
+			<scalar name="ref_deposit" default="700" type="dollars">Refundable Deposit</scalar>
+			<scalar name="non_ref_fees" default="100" type="dollars">Non-refundable Deposit &amp; Fees</scalar>
+			
+			<scalar name="ri_amount" default="0" type="dollars">
+				Monthly Renter's Insurance Amount
+			</scalar>
+				
+			<scalar name="bills_monthly" default="150" type="dollars">
+				Monthly Electric and Utilities
+			</scalar>
+			
+			<scalar name="other_fees_monthly" default="" type="dollars">
+				Other Monthly Fees Not Included Above (Parking, etc.)
+			</scalar>
+			
+			<scalar name="commute_costs" default="100" type="dollars">
+				Monthly Commute Cost (Gas or Transit Passes)
+			</scalar>
+			
+			<button class="next-tab">Next</button>
+		</div>
+		
+		<div title="General" class="container-box appartment-form tab" style="display:none;">
+			
+			<scalar name="inflation_rate" default="6" type="percent">
+				Inflation Rate <footnote>In the long term on the grand scale, appreciation 
+				cannot be higher than inflation.</footnote>
+			</scalar>
+			
+			<scalar name="monthly_savings" default="500" type="dollars">
+				Net monthly income <b>except</b> housing costs 
+				<footnote>
+					This is how much your bank account would grow every month, except housing
+					related costs, if you didn't buy anything you didn't absolutely need.  
+				</footnote>
+			</scalar>
+			
+			
+			<button class="go">Calculate!</button>
+			
+		</div>
+		
+	</div>
+	
+	<br><br>
+<!--
+
+			<fieldset>
+				<legend>Roof</legend>
+				<label>Age (years)</label>
+				<input data-json="roof_age" type="edit" value="5" />
+				
+				<label>Type</label>
+				<select data-json="roof_type">
+					<option value="asphalt_shingle" selected>Asphalt Shingle</option>
+					<option value="rolled_asphalt">Tar/Rolled Asphalt (flat roofs only)</option>
+					<option value="metal">Metal</option>
+					<option value="tile">Tile, Slate, or Clay</option>
+					<option value="wood_shingle">Wood Shingle</option>
+				</select>
+
+				<label>Pitch</label>
+				<select data-json="roof_pitch">
+					<option value="flat">Flat</option>
+					<option value="2_12">Not very steep at all</option>
+					<option value="4_12" selected>Fairly average</option>
+					<option value="6_10">Rather steep, about 45 degrees</option>
+					<option value="8_12">Incredibly dangerous</option>
+				</select>
+			</fieldset>
+			
+			<fieldset>
+				<legend>Taxes</legend>
+				Annual Property Tax Rate
+				<div class="item editable">
+					<input data-json="property_tax_rate" type="edit" value="1.2" />
+				</div>
+			<!--
+				Adjusted Gross Income (not including house/mortgage tax deductions): (taxable income after deductions)
+				<div class="item editable">
+					<input data-json="annual_taxes" type="edit" value="0" />
+				</div>
+
+				Filing Status:
+				<div class="item editable">
+					<select data-json="tax_filing_status">
+						<option selected value="single">Single</option>
+						<option value="married">Married, Filing Jointly</option>
+						<option value="mfs">Married, Filing Separately</option>
+						<option value="head">Head Of Household</option>
+					</select>
+				</div> - ->
+			</fieldset>
+		
+			Monthly Income after taxes and bills, not including housing.
+			<div class="item editable">
+				<input data-json="monthly_income_before_housing" type="edit" value="" />
+			</div>
+
+			Cheapest monthly rent for acceptable unit in area.
+			<div class="item editable">
+				<input data-json="cheapest_rent" type="edit" value="" />
+			</div>
+		
+		</div-->
 		
 		<!--div class="container appartment-form left">
 			<h4>Appartment</h4>
@@ -1012,10 +699,12 @@
 				<input type="edit" value="20" />
 			</div>
 		
-		</div-->
-	</div>
+		</div- ->
+	</div-->
 	
-	<button class="go">Go</button>
+	
+	
+	<div class="chart-options"></div>
 	
 <!-- 	<canvas class="pie-chart" width="600" height="300"></canvas> -->
 	<div class="pie-chart" ></div>
@@ -1034,9 +723,48 @@
 	<br>
 	<br>
 	<br>
-	<h2>Figures Below In Nominal Dollars</h2>
+	<script>
+	$(function() { $('.table-dollar-select').change(function(e) {
+		//console.log($(this).val())
+		$('.amort_table.mortgage').hide();
+		$('.amort_table.mortgage.'+$(this).val()).show();
+	})});
+	</script>
+	<h2>Figures Below In <select class="table-dollar-select"><option value="nominal">Nominal</option><option value="real" selected>Inflation Adjusted</option></select> Dollars</h2>
 	<div class="left">
-		<table class="amort_table mortgage">
+		<table class="amort_table mortgage nominal" style="display:none;">
+			<thead>
+				<tr>
+					<th>EOM</th>
+					<th>Starting Balance</th>
+					
+					<th>PMI</th>
+					<th>Insurance</th>
+					<th>Payment</th>
+					<th>Interest</th>
+					<th>Principle</th>
+					<th>House Value</th>
+					<th>Appreciation</th>
+					<th>Total Appr.</th>
+					<th>Overhead</th>
+					<th>Net Gain</th>
+					<!--th>Total Insurance</th>
+					<th>Appreciation</th>
+					<th>House Value</th>
+					<th>Equity</th>
+					<th>Tax Savings</th>
+					<th>Overhead</th>
+					<th>Monthly Costs</th>
+					<th>Accumulated Costs</th>
+					<th>Net Gain If Sold Now</th-->
+				</th>
+			</thead>
+			<tbody>
+			
+			</tbody>
+		</table>
+		
+		<table class="amort_table mortgage real" >
 			<thead>
 				<tr>
 					<th>EOM</th>
