@@ -514,12 +514,10 @@
 				</opt>
 			</radio>
 			
-			<!--fieldset>
-				<legend>Roof Maintenance</legend>
-				
-				<choose name="rooftype" type="roof_types">Roof Type</choose>
-				
-			</fieldset-->
+			<scalar name="house_area" type="number" default="2000">Living Area, in Square Feet</scalar>
+			<choose name="rooftype" type="roof_types">Roof Type</choose>
+			<scalar name="roof_age" type="number" default="10">Roof Age, in Years</scalar>
+			
 			
 			<scalar name="maint_yearly" default="1200" type="dollars">Yearly Maintenance Cost (Not including monthy costs)</scalar>
 			<scalar name="maint_monthly" default="120" type="dollars">Monthly Maintenance Cost (Not including yearly costs)</scalar>

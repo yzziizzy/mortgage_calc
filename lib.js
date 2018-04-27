@@ -8,9 +8,9 @@ var units = {
 	],
 	
 	roof_types: [
-		'metal',
-		'asphalt',
-		'tile',
+		'Metal',
+		'Asphalt shingle',
+		'Clay tile',
 	],
 	
 };
